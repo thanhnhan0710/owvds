@@ -1,0 +1,889 @@
+{
+"@@locale": "en",
+"loginTitle": "Login",
+"username": "Username",
+"password": "Password",
+"btnLogin": "LOGIN",
+"welcome": "Welcome {name}",
+"@welcome": {
+"placeholders": {
+"name": {
+"type": "String"
+}
+}
+},
+"companyName": "OPPERMANN VIETNAM CO., LTD.",
+"erpSystemName": "Enterprise Resource Planning System",
+"loginSystemHeader": "Login System",
+"loginSubtitle": "Sign in to continue to ERP System",
+"copyright": "© 2026 Oppermann Vietnam",
+"errorRequired": "This field is required",
+"errorLoginFailed": "Login failed. Please check your credentials.",
+"errorNetwork": "Network error. Please check your connection.",
+"errorGeneric": "A system error occurred",
+
+"dashboard": "Dashboard",
+"production": "Production",
+"inventory": "Inventory",
+"sales": "Sales",
+"hr": "Human Resources",
+"reports": "Reports",
+"settings": "Settings",
+"logout": "Logout",
+"totalOrders": "Total Orders",
+"activePlans": "Active Plans",
+"lowStock": "Low Stock Items",
+"revenue": "Revenue",
+"recentActivities": "Recent Activities",
+"viewAll": "View All",
+
+"save": "Save",
+"cancel": "Cancel",
+"confirm": "Confirm",
+"close": "Close",
+"delete": "Delete",
+"edit": "Edit",
+"remove": "Remove",
+"actions": "Actions",
+"required": "Required",
+"successAdded": "Added successfully",
+"successUpdated": "Updated successfully",
+"successDeleted": "Deleted successfully",
+"contact": "Contact",
+"processing": "Processing...",
+"note": "Note",
+"notice": "Notice",
+"featureUnderDevelopment": "This feature is under development.\nPlease come back later.",
+"pageContent": "Page Content: {path}",
+"@pageContent": {
+"placeholders": {
+"path": {
+"type": "String"
+}
+}
+},
+"erpSystemShort": "ERP System",
+"oppermannHeader": "OPPERMANN",
+"searchPlaceholder": "Search...",
+"productionOutput": "Production Output",
+"justNow": "Just now",
+"statusDone": "Done",
+
+"departmentTitle": "Departments",
+"deptName": "Department Name",
+"deptDesc": "Description",
+"searchDept": "Search Department...",
+"addDept": "Add Department",
+"editDept": "Edit Department",
+"deleteDept": "Delete Department",
+"confirmDelete": "Are you sure you want to delete {name}?",
+"@confirmDelete": {
+"placeholders": {
+"name": {
+"type": "String"
+}
+}
+},
+
+"warehouseTitle": "Warehouse Management",
+"warehouseSubtitle": "Manage storage locations & inventory",
+"searchWarehouseHint": "Search by name or location...",
+"addWarehouse": "Add Warehouse",
+"editWarehouse": "Edit Warehouse",
+"deleteWarehouse": "Delete Warehouse",
+"confirmDeleteWarehouse": "Are you sure you want to delete '{name}'? This action cannot be undone.",
+"@confirmDeleteWarehouse": {
+"placeholders": {
+"name": {
+"type": "String"
+}
+}
+},
+"warehouseName": "Warehouse Name",
+"location": "Location",
+"description": "Description",
+"noWarehouseFound": "No warehouses found",
+"noDescription": "No description",
+"cannotOpenMap": "Cannot open maps",
+
+"employeeTitle": "Employees",
+"fullName": "Full Name",
+"email": "Email",
+"phone": "Phone",
+"address": "Address",
+"position": "Position",
+"department": "Department",
+"searchEmployee": "Search employee...",
+"addEmployee": "Add Employee",
+"editEmployee": "Edit Employee",
+"deleteEmployee": "Delete Employee",
+"confirmDeleteEmployee": "Delete employee {name}?",
+"@confirmDeleteEmployee": {
+"placeholders": {
+"name": {
+"type": "String"
+}
+}
+},
+"selectDept": "Select Department",
+"totalDepartments": "Total Departments",
+"status": "Status",
+"active": "Active",
+"inactive": "Inactive",
+"members": "Members",
+
+"supplierTitle": "Suppliers",
+"supplierName": "Supplier Name",
+"searchSupplier": "Search supplier...",
+"addSupplier": "Add Supplier",
+"editSupplier": "Edit Supplier",
+"deleteSupplier": "Delete Supplier",
+"confirmDeleteSupplier": "Are you sure you want to delete {name}?",
+"@confirmDeleteSupplier": {
+"placeholders": {
+"name": {
+"type": "String"
+}
+}
+},
+"paymentTerm": "Payment Term",
+"taxCode": "Tax Code",
+"leadTime": "Lead Time",
+"days": "Days",
+"contactPerson": "Contact Person",
+"shortName": "Short Name",
+"currency": "Currency",
+"originType": "Origin Type",
+"isActiveProvider": "Is Active Provider?",
+
+"yarnTitle": "Yarn Inventory",
+"yarnName": "Yarn Name",
+"itemCode": "Item Code",
+"yarnType": "Type",
+"color": "Color",
+"origin": "Origin",
+"supplier": "Supplier",
+"searchYarn": "Search yarn (name, code)...",
+"addYarn": "Add Yarn",
+"editYarn": "Edit Yarn",
+"deleteYarn": "Delete Yarn",
+"confirmDeleteYarn": "Delete yarn {name}?",
+"@confirmDeleteYarn": {
+"placeholders": {
+"name": {
+"type": "String"
+}
+}
+},
+"selectSupplier": "Select Supplier",
+"noYarnFound": "No yarn items found",
+
+"yarnLotTitle": "Yarn Lots",
+"lotCode": "Lot Code",
+"importDate": "Import Date",
+"totalKg": "Total (kg)",
+"rollCount": "Rolls",
+"warehouseLoc": "Location",
+"containerCode": "Container",
+"driver": "Driver",
+"receiver": "Receiver",
+"searchYarnLot": "Search lot code...",
+"addYarnLot": "Add Yarn Lot",
+"editYarnLot": "Edit Yarn Lot",
+"deleteYarnLot": "Delete Yarn Lot",
+"confirmDeleteYarnLot": "Delete yarn lot {code}?",
+"@confirmDeleteYarnLot": {
+"placeholders": {
+"code": {
+"type": "String"
+}
+}
+},
+"selectYarn": "Select Yarn",
+"selectEmployee": "Select Employee",
+
+"materialTitle": "Materials",
+"materialMaster": "Materials Master",
+"materialBreadcrumb": "Inventory > Materials",
+"materialName": "Material Name",
+"materialCode": "Material Code",
+"materialType": "Type",
+"quantity": "Quantity",
+"unit": "Unit",
+"importedBy": "Imported By",
+"searchMaterial": "Search material...",
+"searchMaterialHint": "Search Code, Name...",
+"totalMaterials": "Total Materials",
+"addMaterial": "Add Material",
+"editMaterial": "Edit Material",
+"deleteMaterial": "Delete Material",
+"confirmDeleteMaterial": "Delete material {name}?",
+"@confirmDeleteMaterial": {
+"placeholders": {
+"name": {
+"type": "String"
+}
+}
+},
+"noMaterialFound": "No materials found",
+"selectImporter": "Select Importer",
+"selectUnit": "Select Unit",
+"hsCode": "HS Code",
+"denier": "Denier",
+"denierHint": "Denier (e.g 1000D)",
+"filament": "Filament",
+"minStock": "Min Stock",
+"uomBasePurchase": "UOM Purchase (Base)",
+"uomProduction": "UOM Production",
+"uomBP": "UOM (B/P)",
+"specs": "Specs",
+
+"unitTitle": "Units of Measurement",
+"unitName": "Unit Name",
+"searchUnit": "Search unit...",
+"addUnit": "Add Unit",
+"editUnit": "Edit Unit",
+"deleteUnit": "Delete Unit",
+"confirmDeleteUnit": "Delete unit {name}?",
+"@confirmDeleteUnit": {
+"placeholders": {
+"name": {
+"type": "String"
+}
+}
+},
+"noUnitFound": "No units found",
+
+"machineTitle": "Machines",
+"machineName": "Machine Name",
+"totalLines": "Total Lines",
+"purpose": "Purpose",
+"area":"Area",
+"searchMachine": "Search machine...",
+"addMachine": "Add Machine",
+"editMachine": "Edit Machine",
+"deleteMachine": "Delete Machine",
+"confirmDeleteMachine": "Delete machine {name}?",
+"@confirmDeleteMachine": {
+"placeholders": {
+"name": {
+"type": "String"
+}
+}
+},
+"noMachineFound": "No machines found",
+"running": "Running",
+"stopped": "Stopped",
+"maintenance": "Maintenance",
+"spinning":"Spinning",
+"yarnOut":"Yarn Out",
+"unassignedArea": "Unassigned Area",
+
+"statusRunning": "Running",
+"statusSpinning": "Spinning",
+"statusStopped": "Stopped",
+"statusMaintenance": "Maintenance",
+"viewHistory": "View History",
+"machineHistoryTitle": "History: {name}",
+"@machineHistoryTitle": {
+"placeholders": {
+"name": {
+"type": "String"
+}
+}
+},
+"noHistoryData": "No activity history available.",
+"reasonLabel": "Reason: {reason}",
+"@reasonLabel": {
+"placeholders": {
+"reason": {
+"type": "String"
+}
+}
+},
+"durationFormatMin": "{min} min",
+"@durationFormatMin": {
+"placeholders": {
+"min": {
+"type": "String"
+}
+}
+},
+"durationFormatHour": "{hour}h {min}m",
+"@durationFormatHour": {
+"placeholders": {
+"hour": {
+"type": "int"
+},
+"min": {
+"type": "int"
+}
+}
+},
+"timeCurrent": "Now",
+
+"changeStatusTitle": "Change Status: {status}",
+"@changeStatusTitle": {
+"placeholders": {
+"status": {
+"type": "String"
+}
+}
+},
+"confirmStatusChangeMsg": "Do you want to change machine {name} to {status}?",
+"@confirmStatusChangeMsg": {
+"placeholders": {
+"name": {
+"type": "String"
+},
+"status": {
+"type": "String"
+}
+}
+},
+"reasonIssue": "Reason / Issue Description",
+"enterReason": "Enter reason (e.g. Broken thread, Motor failure...)",
+"reasonRequired": "Please enter a reason",
+"captureEvidence": "Capture Evidence",
+"openingCamera": "Opening Camera...",
+"cameraFeatureDev": "Camera feature is under development",
+
+"shiftTitle": "Work Shifts",
+"shiftName": "Shift Name",
+"searchShift": "Search shift...",
+"addShift": "Add Shift",
+"editShift": "Edit Shift",
+"deleteShift": "Delete Shift",
+"confirmDeleteShift": "Delete shift {name}?",
+"@confirmDeleteShift": {
+"placeholders": {
+"name": {
+"type": "String"
+}
+}
+},
+"noShiftFound": "No shifts found",
+
+"basketTitle": "Baskets",
+"basketCode": "Basket Code",
+"basketTitleVS2":"Basket",
+"basketBreadcrumb": "Inventory > Baskets",
+"totalBaskets": "Total Baskets",
+"tareWeight": "Tare Weight (kg)",
+"searchBasket": "Search basket...",
+"addBasket": "Add Basket",
+"editBasket": "Edit Basket",
+"deleteBasket": "Delete Basket",
+"confirmDeleteBasket": "Delete basket {code}?",
+"@confirmDeleteBasket": {
+"placeholders": {
+"code": {
+"type": "String"
+}
+}
+},
+"noBasketFound": "No baskets found",
+"basketFound": "Basket Found: {code}",
+"@basketFound": {
+"placeholders": {
+"code": {
+"type": "String"
+}
+}
+},
+"basketNotFoundOrNotReady": "Basket not found or NOT READY",
+"stReady": "Ready",
+"stInUse": "In Use",
+"stHolding": "Holding",
+"stDamaged": "Damaged",
+"errorTareWeightInvalid": "Tare weight must be greater than 0",
+
+"dyeColorTitle": "Dye Colors",
+"colorName": "Color Name",
+"hexCode": "Hex Code",
+"searchColor": "Search color...",
+"addColor": "Add Color",
+"editColor": "Edit Color",
+"deleteColor": "Delete Color",
+"confirmDeleteColor": "Delete color {name}?",
+"@confirmDeleteColor": {
+"placeholders": {
+"name": {
+"type": "String"
+}
+}
+},
+"noColorFound": "No colors found",
+"invalidHex": "Invalid Hex Code (e.g., #FF0000)",
+
+"productTitle": "Products",
+"productImage": "Image",
+"searchProduct": "Search product...",
+"addProduct": "Add Product",
+"editProduct": "Edit Product",
+"deleteProduct": "Delete Product",
+"confirmDeleteProduct": "Delete product {code}?",
+"@confirmDeleteProduct": {
+"placeholders": {
+"code": {
+"type": "String"
+}
+}
+},
+"noProductFound": "No products found",
+"uploadImage": "Upload Image",
+
+"standardTitle": "Standards",
+"standardCode": "Standard Code",
+"product": "Product",
+"dyeColor": "Dye Color",
+"width": "Width (mm)",
+"thickness": "Thickness (mm)",
+"strength": "Strength (daN)",
+"elongation": "Elongation (%)",
+"colorFastDry": "Color Fastness (Dry)",
+"colorFastWet": "Color Fastness (Wet)",
+"deltaE": "Delta E",
+"appearance": "Appearance",
+"weftDensity": "Weft Density (pick/10cm)",
+"weight": "Weight (g/m)",
+"searchStandard": "Search standard...",
+"addStandard": "Add Standard",
+"editStandard": "Edit Standard",
+"deleteStandard": "Delete Standard",
+"confirmDeleteStandard": "Delete standard {code}?",
+"@confirmDeleteStandard": {
+"placeholders": {
+"code": {
+"type": "String"
+}
+}
+},
+"noStandardFound": "No standards found",
+
+"scheduleTitle": "Work Schedules",
+"workDate": "Work Date",
+"employee": "Employee",
+"shift": "Shift",
+"startTime": "Start Time",
+"endTime": "End Time",
+"searchSchedule": "Search schedule...",
+"addSchedule": "Assign Schedule",
+"editSchedule": "Edit Schedule",
+"deleteSchedule": "Delete Schedule",
+"confirmDeleteSchedule": "Delete schedule for {name} on {date}?",
+"@confirmDeleteSchedule": {
+"placeholders": {
+"name": {
+"type": "String"
+},
+"date": {
+"type": "String"
+}
+}
+},
+"noScheduleFound": "No schedules found",
+"filterDate": "Filter by Date",
+"errorDuplicateSchedule": "Conflict: This employee already has a shift on this date.",
+"errorUnknown": "An unknown error occurred",
+
+"weavingTicketTitle": "Weaving Tickets",
+"ticketCode": "Ticket Code",
+"loadDate":"Load date",
+"date":"Date",
+"timeIn":"Time In",
+"empIn":"Emp In",
+"timeOut":"Time Out",
+"empOut": "Emp Out",
+"tage":"Tage weight",
+"machineInfo": "Machine / Line",
+"yarnInfo": "Yarn Lot / Date",
+"standardData":"Standard Specifications",
+"weightInfo": "Gross / Net / Tare",
+"lengthKnots": "Length (m) / Knots",
+"employees": "Operators",
+"timeInOut": "Time In / Out",
+"inspections": "QC Inspections",
+"addTicket": "New Ticket",
+"stageName": "Stage",
+"gross":"Gross Weight",
+"density": "Density",
+"tension": "Tension",
+"bowing": "Bowing",
+"inspector": "Inspector",
+"noTicketSelected": "Select a ticket to view details",
+"deleteTicket": "Delete Ticket",
+"confirmDeleteTicket": "Delete ticket {code}?",
+"@confirmDeleteTicket": {
+"placeholders": {
+"code": {
+"type": "String"
+}
+}
+},
+"deleteInspection": "Delete Inspection",
+"machineAndMaterial":"Machine & Material",
+"generalInfo": "General Info",
+"personnel": "Personnel",
+"resultsUpdateOnly": "Results (Update Only)",
+
+"machineOperation": "Machine Operation",
+"selectProductBefore":"Select the product first",
+"line": "Line",
+"assignBasket": "Assign Basket",
+"selectBasket": "Select Ready Basket",
+"scanBarcode": "Scan Barcode / Input Code",
+"scanBarcodeSubline":"Scan the basket code here to select your own items",
+"addInspection": "Add QC",
+"viewTicket": "View Ticket",
+"editTicket":"Edit ticket",
+"currentBasket": "Current Basket",
+"noActiveBasket": "No active basket",
+"confirmRelease": "Finish this ticket and release basket?",
+"basketAssigned": "Basket assigned successfully",
+
+"releaseBasket": "Release Basket / Finish Ticket",
+"finishTicket": "Finish Ticket",
+"grossWeight": "Gross Weight (kg)",
+"netWeight": "Net Weight (kg)",
+"length": "Length (m)",
+"splice":"Splice",
+"bow":"Bow",
+"employeeOut": "Receiver / Operator Out",
+"ticketDetails": "Ticket Details",
+"inspectionHistory": "Inspection History",
+"newInspection": "New Inspection",
+"confirmReleaseTitle": "Confirm Finish",
+"confirmReleaseMsg": "Are you sure you want to finish this ticket and release the basket?",
+"saveSuccess": "Saved successfully",
+
+"noTicketsFoundForThisDate": "No tickets found for this date",
+"noBasket": "No Basket",
+"productionInfo": "Production Info",
+"timeAndPersonnel": "Time & Personnel",
+"output": "Output",
+"noInspectionsRecorded": "No inspections recorded",
+
+"inspection":"Inspection",
+"measurements": "Measurements",
+
+"userManagementTitle": "User Management",
+"searchUser": "Search users (name, email)...",
+"noUserFound": "No users found.",
+"lastLogin": "Last Login",
+"notLinked": "Not Linked",
+"superuser": "SUPERUSER",
+"inactive": "Inactive",
+"never": "Never",
+"addUser": "Add User",
+"editUser": "Edit User",
+"addNewUser": "Add New User",
+"linkToEmployee": "Link to Employee",
+"linkEmployeeHelper": "Select an employee to link with this account",
+"noEmployeeLinkedOption": "--- No Employee Linked ---",
+"passwordRequiredNew": "Required for new user",
+"newPasswordPlaceholder": "New Password (Leave blank to keep)",
+"role": "Role",
+"isActiveSwitch": "Is Active",
+"isSuperuserSwitch": "Is Superuser",
+"confirmDeleteTitle": "Confirm Delete",
+"confirmDeleteUserMsg": "Are you sure you want to delete {name}?",
+"@confirmDeleteUserMsg": {
+"placeholders": {
+"name": {
+"type": "String"
+}
+}
+},
+
+"prodStatsTitle": "Production Statistics",
+"exportExcel": "Export Excel",
+"refreshData": "Refresh Data",
+"recalculateToday": "Recalculate (Today)",
+"searchProductHint": "Search product code, note...",
+"filterToday": "Today",
+"filterYesterday": "Yesterday",
+"filter7Days": "Last 7 Days",
+"filterThisMonth": "This Month",
+"filterLastMonth": "Last Month",
+"filterThisQuarter": "This Quarter",
+"filterThisYear": "This Year",
+"filterCustom": "Custom Date",
+"selectDate": "Select Date",
+"totalProduction": "TOTAL PRODUCTION",
+"totalLength": "TOTAL LENGTH",
+"itemCount": "ITEMS",
+"noStatsData": "No data for this period",
+"machines": "Machines",
+"copySuccess": "Copied to clipboard!",
+"exporting": "Creating Excel file...",
+"exportError": "Export error: {error}",
+"@exportError": {
+"placeholders": {
+"error": {
+"type": "String"
+}
+}
+},
+
+"purchaseOrderTitle": "Purchase Orders",
+"purchaseOrderSubtitle": "Manage procurement and suppliers",
+"createPO": "CREATE PO",
+"searchPO": "Search PO Number...",
+"poNumber": "PO Number",
+"vendor": "Vendor",
+"orderDate": "Order Date",
+"eta": "Expected Arrival (ETA)",
+"incoterm": "Incoterm",
+"currency": "Currency",
+"exchangeRate": "Exchange Rate",
+"totalAmount": "Total Amount",
+"poDetailTitle": "Purchase Order Detail",
+"orderItems": "Order Items",
+"addItem": "Add Item",
+"addMaterial": "Add Material",
+"noItemsPO": "No items in this order yet.",
+"addMaterialPrompt": "Click '+ Add Material' to start.",
+"materialInfo": "MATERIAL INFORMATION",
+"tapToSearch": "Tap to search material...",
+"transactionDetails": "TRANSACTION DETAILS",
+"unitPrice": "Unit Price",
+"lineTotal": "Line Total",
+"estimatedTotal": "Estimated Total",
+"confirmAdd": "Confirm Add",
+"searchMaterialPlaceholder": "Type name, code, specs...",
+"deletePO": "Delete PO",
+"confirmDeletePO": "Are you sure you want to delete PO {number}?",
+"@confirmDeletePO": {
+"placeholders": {
+"number": {
+"type": "String"
+}
+}
+},
+
+"bomTitle": "BOM Management",
+"bomSubtitle": "Production > Bill of Materials",
+"addBOM": "ADD BOM",
+"noBOMFound": "No BOM configurations found",
+"bomCode": "BOM Code",
+"bomName": "BOM Name",
+"baseQty": "Base Qty",
+"version": "Version",
+"viewIngredients": "View Ingredients",
+"newBOM": "New BOM",
+"editBOM": "Edit BOM Header",
+"selectProduct": "Select Product",
+"chooseProduct": "Choose a product",
+"loadingProducts": "Loading products...",
+"setActiveVersion": "Set as Active Version",
+"bomCodeRequired": "BOM Code is required",
+"productRequired": "Please select a Product!",
+"deleteBOM": "Delete BOM",
+"confirmDeleteBOM": "Delete BOM {code}? This will remove all material details.",
+"@confirmDeleteBOM": {
+"placeholders": {
+"code": {
+"type": "String"
+}
+}
+},
+"bomIngredientsConfig": "BOM Ingredients Config",
+"matId": "Mat ID",
+"ends": "Ends",
+"stdQty": "Std",
+"wastage": "Waste",
+"grossQty": "Gross",
+"saveDetail": "Save Detail",
+"editMaterialDetail": "Edit Material Detail",
+
+"importDeclarationTitle": "Import Declarations",
+"importDeclarationSubtitle": "Manage customs declarations (E31, A11...)",
+"newDeclaration": "NEW DECLARATION",
+"searchDeclarationHint": "Search No, Invoice, B/L...",
+"noDeclarationFound": "No declarations found",
+"declarationNo": "Declaration No",
+"declarationDate": "Declaration Date",
+"declarationType": "Type",
+"invoiceBill": "Invoice / Bill",
+"totalTax": "Total Tax",
+"invoiceAbbr": "Inv",
+"billOfLadingAbbr": "B/L",
+"invoiceNo": "Invoice No",
+"billOfLading": "Bill of Lading",
+"createDeclaration": "Create Declaration",
+"editDeclaration": "Edit Declaration",
+"totalTaxAmount": "Total Tax Amount",
+"deleteDeclaration": "Delete Declaration",
+"confirmDeleteDeclaration": "Are you sure you want to delete declaration {number}?",
+"@confirmDeleteDeclaration": {
+"placeholders": {
+"number": {
+"type": "String"
+}
+}
+},
+
+"declarationDetailTitle": "Declaration Details",
+"declarationItemsList": "Cargo List",
+"addDeclarationItem": "Add Item",
+"noDeclarationItems": "No items in this declaration.",
+"addDeclarationItemPrompt": "Click '+ Add Item' to start.",
+"editDeclarationItem": "Edit Item",
+"addDeclarationItemTitle": "Add Item to Declaration",
+"materialLabel": "Material",
+"selectMaterialPlaceholder": "Select material...",
+"actualHSCode": "HS Code (Actual)",
+"quantityLabel": "Quantity",
+"unitPriceLabel": "Unit Price",
+"errorSelectMaterial": "Please select a material!",
+"searchMaterialTitle": "Search Material",
+"deleteItemTitle": "Delete Item",
+"confirmDeleteItemMsg": "Are you sure you want to delete this item?",
+"registrationDate": "Reg. Date",
+"updateAction": "Update",
+
+"stockInTitle": "Stock In",
+"stockInSubtitle": "Manage stock in receipts",
+"tabMaterial": "Materials",
+"tabSemiFinished": "Semi-finished",
+"tabFinished": "Finished Goods",
+"goodsList": "Goods List",
+"addRow": "Add Row",
+"saveReceipt": "SAVE RECEIPT",
+"receiptNumber": "Receipt No",
+"receivingWarehouse": "Receiving Warehouse",
+"sendingDepartment": "Sending Dept",
+"semiFinishedCode": "Code",
+"semiFinishedName": "Name",
+"goodQty": "Good Qty",
+"badQty": "Bad Qty",
+"source": "Source",
+"carton": "Carton/Bundle",
+"selectPlaceholder": "Select...",
+"cancelAction": "Cancel",
+"generalInfoTitle": "General Info - {title}",
+"@generalInfoTitle": {
+"placeholders": {
+"title": {
+"type": "String"
+}
+}
+},
+
+"createReceiptTitle": "Create New Receipt",
+"editReceiptTitle": "Receipt Details",
+"logisticsInfo": "Logistics Info",
+"byPO": "By Purchase Order (PO)",
+"customsDeclarationOptional": "Customs Declaration (Optional)",
+"noSelection": "--- No Selection ---",
+"loadingDeclaration": "Loading declarations...",
+"createdBy": "Created By",
+"containerNumber": "Container No",
+"sealNumber": "Seal No",
+"materialCode": "Material Code",
+"materialName": "Material Name",
+"poQtyKg": "PO Qty (Kg)",
+"poQtyCones": "PO Qty (Cones)",
+"actualQtyKg": "Actual (Kg)",
+"actualQtyCones": "Actual (Cones)",
+"pallets": "Pallets",
+"supplierBatch": "Supplier Batch",
+"selectWarehouse": "Select Warehouse",
+"noMaterialsYet": "No materials added yet",
+"confirmDeleteDetailMsg": "Deleting this line will update PO quantities. Continue?",
+"importDate": "Import Date",
+
+"searchStockInHint": "Search Receipt No, PO, Container...",
+"createStockIn": "CREATE RECEIPT",
+"reload": "Reload",
+"noStockInFound": "No stock in receipts found for this period.",
+"containerSeal": "Container / Seal",
+"confirmDeleteStockIn": "Are you sure you want to delete receipt {number}?",
+"@confirmDeleteStockIn": {
+"placeholders": {
+"number": {
+"type": "String"
+}
+}
+},
+"errorLabel": "Error: {message}",
+"@errorLabel": {
+"placeholders": {
+"message": {
+"type": "String"
+}
+}
+},
+"errorLoadMaterials": "Error loading materials: {error}",
+"@errorLoadMaterials": {
+"placeholders": {
+"error": {
+"type": "String"
+}
+}
+},
+"actualImportLabel": "ACTUAL IMPORT",
+"errorNegative": "Cannot be negative",
+
+"batchManagement": "Batch Management",
+"batchSubtitle": "Track raw material batches & QC status",
+"addBatch": "ADD BATCH",
+"searchBatchHint": "Search by Batch No...",
+"internalCode": "INTERNAL CODE",
+"supplierBatch": "SUPPLIER BATCH",
+"originCountry": "ORIGIN",
+"qcStatus": "QC STATUS",
+"qcNote": "QC NOTE",
+"traceability": "TRACEABILITY",
+"linkedReceipt": "Linked to Receipt",
+"linkedReceiptId": "Linked Receipt Detail ID",
+"linkedReceiptIdHelper": "Enter ID of Material Receipt Detail (Optional)",
+"mfgDate": "Mfg Date",
+"expDate": "Exp Date",
+"qualityControl": "Quality Control",
+"generalNote": "General Note",
+"isActiveBatchHint": "Turn off if batch is cancelled or unused",
+"confirmDeleteBatchMsg": "Are you sure you want to delete batch {code}?",
+"@confirmDeleteBatchMsg": {
+"placeholders": {
+"code": {
+"type": "String"
+}
+}
+},
+"noBatchesFound": "No batches found",
+"unknownMaterial": "Unknown Material #{id}",
+"@unknownMaterial": {
+"placeholders": {
+"id": {
+"type": "int"
+}
+}
+},
+
+"materialPurchaseOrders": "Material Purchase Orders",
+"importExport": "Import/Export",
+"stockOutHeader": "Stock Out",
+"materialExport": "Material Export",
+"semiFinishedExport": "Semi-finished Export",
+"finishedProductExport": "Finished Product Export",
+"inventoryStock": "Inventory Stock",
+"semiFinishedProducts": "Semi-finished Products",
+"finishedProducts": "Finished Products",
+"materialBatches": "Material Batches",
+"weaving": "Weaving",
+"machineBasketInfo": "Machine & Basket Info",
+"weavingManagement": "Weaving Management",
+"dyeing": "Dyeing",
+"printing": "Printing",
+"safeFinishedProducts": "Safe Finished Products",
+"packing": "Packing",
+"rolling": "Rolling",
+"cutting": "Cutting",
+"adminTitle": "Administrator",
+"activityLog": "Activity Log",
+"quickAccess": "Quick Access",
+"rememberMe": "Remember login"
+
+}
