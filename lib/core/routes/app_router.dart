@@ -4,6 +4,8 @@ import 'package:owvds/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:owvds/features/auth/presentation/screens/login_screen.dart';
 import 'package:owvds/features/home/presentation/screens/admin_dashboard_screen.dart';
 import 'package:owvds/features/production/loom_state/presentation/screens/semi_finished_screen.dart';
+import 'package:owvds/features/production/machine/machine_assignment/presentation/screens/loom_dashboard_screen.dart';
+import 'package:owvds/features/production/machine/presentation/screens/macine_management_screen.dart';
 
 class AppRouter {
   static GoRouter router(AuthCubit authCubit) {
@@ -51,6 +53,14 @@ class AppRouter {
         GoRoute(
           path: '/semi-finished',
           builder: (context, state) => const SemiFinishedScreen(),
+        ),
+        GoRoute(
+          path: '/machine-managements',
+          builder: (context, state) => const MachineManagementScreen(),
+        ),
+        GoRoute(
+          path: '/loom-dashboard',
+          builder: (context, state) => const LoomDashboardScreen(),
         ),
       ],
     );

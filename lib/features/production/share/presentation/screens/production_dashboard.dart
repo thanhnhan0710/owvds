@@ -126,7 +126,7 @@ class _ProductionDashboardState extends State<ProductionDashboard> {
             'title': 'Máy móc',
             'icon': Icons.settings_input_component,
             'color': Colors.blueGrey,
-            'route': '/machines',
+            'route': '/machine-managements',
           },
           {
             'title': 'Rổ chứa',
@@ -145,6 +145,13 @@ class _ProductionDashboardState extends State<ProductionDashboard> {
 
         _buildSectionTitle("VẬN HÀNH QUY TRÌNH", Icons.play_circle_fill),
         _buildGridMenu([
+          // [MỚI] Thêm menu chức năng Điều độ Máy Dệt (Loom Assignment) vào trang chính
+          {
+            'title': 'Quản lý loom dệt',
+            'icon': Icons.dashboard_customize,
+            'color': Colors.blue.shade800,
+            'route': '/loom-dashboard',
+          },
           {
             'title': 'Quy trình Dệt',
             'icon': Icons.waves,
@@ -525,7 +532,6 @@ class _ProductionDashboardState extends State<ProductionDashboard> {
           touchTooltipData: BarTouchTooltipData(
             getTooltipItem: (group, groupIndex, rod, rodIndex) {
               return BarTooltipItem(
-                // [ĐÃ SỬA]: Hiển thị "Tất cả sản phẩm" thay vì tên SP cụ thể
                 '${rod.toY.round()} Đơn vị\nTất cả sản phẩm',
                 const TextStyle(
                   color: Colors.white,

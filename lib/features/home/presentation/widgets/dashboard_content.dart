@@ -23,7 +23,7 @@ class DashboardContent extends StatelessWidget {
         const SizedBox(height: 24),
 
         // Các thẻ thống kê
-        _buildStatCards(l10n, context),
+        _buildStatCards(l10n),
 
         const SizedBox(height: 32),
 
@@ -53,43 +53,65 @@ class DashboardContent extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCards(AppLocalizations l10n, BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    int crossAxisCount = screenWidth > 1200 ? 4 : (screenWidth > 800 ? 2 : 1);
+  Widget _buildStatCards(AppLocalizations l10n) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
 
-    return GridView.count(
-      crossAxisCount: crossAxisCount,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 20,
-      mainAxisSpacing: 20,
-      childAspectRatio: screenWidth > 800 ? 1.8 : 2.5,
-      children: [
-        _buildInfoCard(
-          l10n.totalOrders,
-          "1,240",
-          Icons.shopping_bag_rounded,
-          Colors.blue,
-        ),
-        _buildInfoCard(
-          l10n.activePlans,
-          "8",
-          Icons.precision_manufacturing_rounded,
-          Colors.orange,
-        ),
-        _buildInfoCard(
-          l10n.revenue,
-          "\$84K",
-          Icons.attach_money_rounded,
-          Colors.green,
-        ),
-        _buildInfoCard(
-          l10n.lowStock,
-          "12 Items",
-          Icons.warning_rounded,
-          Colors.red,
-        ),
-      ],
+        int crossAxisCount = 1;
+        if (availableWidth >= 1200) {
+          crossAxisCount = 4;
+        } else if (availableWidth >= 700)
+          // ignore: curly_braces_in_flow_control_structures
+          crossAxisCount = 2;
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 20,
+            mainAxisSpacing: 20,
+            // [SỬA] Tăng chiều cao lên 160 để thẻ có không gian thở, chống tràn chữ
+            mainAxisExtent: 160,
+          ),
+          itemCount: 4,
+          itemBuilder: (context, index) {
+            switch (index) {
+              case 0:
+                return _buildInfoCard(
+                  l10n.totalOrders,
+                  "1,240",
+                  Icons.shopping_bag_rounded,
+                  Colors.blue,
+                );
+              case 1:
+                return _buildInfoCard(
+                  l10n.activePlans,
+                  "8",
+                  Icons.precision_manufacturing_rounded,
+                  Colors.orange,
+                );
+              case 2:
+                return _buildInfoCard(
+                  l10n.revenue,
+                  "\$84K",
+                  Icons.attach_money_rounded,
+                  Colors.green,
+                );
+              case 3:
+                return _buildInfoCard(
+                  l10n.lowStock,
+                  "12 Items",
+                  Icons.warning_rounded,
+                  Colors.red,
+                );
+              default:
+                return const SizedBox();
+            }
+          },
+        );
+      },
     );
   }
 
@@ -100,7 +122,8 @@ class DashboardContent extends StatelessWidget {
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      // [SỬA] Giảm padding từ 20 xuống 16 để thêm không gian bên trong
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -114,10 +137,12 @@ class DashboardContent extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+        // [SỬA QUAN TRỌNG] Dùng spaceBetween đẩy tự động thay vì dùng Spacer() rất dễ lỗi
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
@@ -146,25 +171,33 @@ class DashboardContent extends StatelessWidget {
               ),
             ],
           ),
-          const Spacer(),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              color: Colors.grey.shade500,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+
+          // [SỬA] Nhóm khối Text lại với nhau
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black87,
+                ),
+                maxLines: 1, // [BẢO VỆ] Cắt chữ nếu text quá dài
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1, // [BẢO VỆ] Cắt chữ nếu tiêu đề quá dài
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ],
       ),
@@ -304,7 +337,6 @@ class DashboardContent extends StatelessWidget {
   }
 }
 
-// Custom Painter cho Biểu đồ (Có thêm Gradient mờ bên dưới Line)
 class _ModernChartPainter extends CustomPainter {
   final Color color;
   _ModernChartPainter({required this.color});
@@ -332,7 +364,6 @@ class _ModernChartPainter extends CustomPainter {
       size.height * 0.2,
     );
 
-    // Vẽ vùng Gradient bên dưới Line
     final fillPath = Path.from(path)
       ..lineTo(size.width, size.height)
       ..lineTo(0, size.height)
@@ -351,7 +382,6 @@ class _ModernChartPainter extends CustomPainter {
         ),
     );
 
-    // Vẽ Line chính
     final paint = Paint()
       ..color = color
       ..strokeWidth = 4
