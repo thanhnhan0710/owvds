@@ -5,8 +5,7 @@ import 'package:owvds/features/production/loom_state/product/domain/product_mode
 import 'package:owvds/features/production/machine/machine/domain/machine_model.dart';
 import 'package:owvds/features/production/machine/machine_assignment/data/machine_assignment_repository.dart';
 import 'package:owvds/features/production/machine/machine_assignment/presentation/bloc/machine_assignment_cubit.dart';
-
-import 'machine_history_dialog.dart';
+import 'package:owvds/features/production/machine/machine_assignment/presentation/screens/singel_machine_history_screen.dart';
 
 class MachineControlDialog extends StatelessWidget {
   final Machine machine;
@@ -20,7 +19,6 @@ class MachineControlDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Khởi tạo Cubit cục bộ và Repository trực tiếp để tránh lỗi sl()
     return BlocProvider(
       create: (_) => MachineAssignmentCubit(
         repo: MachineAssignmentRepository(),
@@ -206,16 +204,19 @@ class MachineControlDialog extends StatelessWidget {
                       const SizedBox(height: 12),
                     ],
 
+                    // [ĐÃ SỬA]: Nút xem lịch sử dùng Navigator.push
                     TextButton.icon(
                       icon: const Icon(Icons.history),
                       label: const Text("Xem toàn bộ lịch sử chạy máy"),
                       onPressed: () {
-                        final cubit = context.read<MachineAssignmentCubit>();
-                        showDialog(
-                          context: context,
-                          builder: (_) => BlocProvider.value(
-                            value: cubit,
-                            child: MachineHistoryDialog(
+                        // Đóng form hiện tại trước khi chuyển trang
+                        Navigator.pop(context);
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => MachineHistoryScreen(
+                              machineId: machine.id,
                               machineName: machine.machineName,
                             ),
                           ),

@@ -5,15 +5,13 @@ import 'package:owvds/core/widgets/responsive_layout.dart';
 import 'package:owvds/features/area/presentation/bloc/area_cubit.dart';
 import 'package:owvds/features/production/loom_state/product/presentation/bloc/product_cubit.dart';
 import 'package:owvds/features/production/machine/machine/presentation/bloc/machine_cubit.dart';
-import 'package:owvds/features/production/machine/machine_assignment/data/machine_assignment_repository.dart';
 import 'package:owvds/features/production/machine/machine_assignment/presentation/bloc/gobal_assignment_cubit.dart';
-import 'package:owvds/features/production/machine/machine_assignment/presentation/bloc/machine_assignment_cubit.dart';
 import 'package:owvds/features/production/machine/machine_assignment/presentation/screens/gobal_history_screen.dart';
+import 'package:owvds/features/production/machine/machine_assignment/presentation/screens/singel_machine_history_screen.dart';
 import 'package:owvds/features/production/machine/presentation/widgets/area_slidebar.dart';
 
 import '../dialogs/assign_product_dialog.dart';
 import '../dialogs/batch_assign_dialog.dart';
-import '../dialogs/machine_history_dialog.dart';
 
 class LoomDashboardScreen extends StatefulWidget {
   const LoomDashboardScreen({super.key});
@@ -342,14 +340,11 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
                             child: InkWell(
                               borderRadius: BorderRadius.circular(12),
                               onTap: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => BlocProvider(
-                                    create: (_) => MachineAssignmentCubit(
-                                      repo: MachineAssignmentRepository(),
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => MachineHistoryScreen(
                                       machineId: machine.id,
-                                    )..loadMachineData(),
-                                    child: MachineHistoryDialog(
                                       machineName: machine.machineName,
                                     ),
                                   ),

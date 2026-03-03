@@ -2,6 +2,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:owvds/core/bloc/language_cubit.dart';
 import 'package:owvds/features/area/data/area_repository.dart';
 import 'package:owvds/features/area/presentation/bloc/area_cubit.dart';
+import 'package:owvds/features/hr/department/data/department_repository.dart';
+import 'package:owvds/features/hr/department/presentation/bloc/department_cubit.dart';
+import 'package:owvds/features/hr/employee/data/employee_repository.dart';
+import 'package:owvds/features/hr/employee/presentation/bloc/employee_cubit.dart';
+import 'package:owvds/features/hr/work_schedule/data/work_schedule_repository.dart';
+import 'package:owvds/features/hr/work_schedule/presentation/bloc/work_schedule_cubit.dart';
+import 'package:owvds/features/hr/work_schedule/shift/data/shift_repository.dart';
+import 'package:owvds/features/hr/work_schedule/shift/presentation/bloc/shift_cubit.dart';
 import 'package:owvds/features/production/loom_state/product/data/product_repository.dart';
 import 'package:owvds/features/production/loom_state/product/presentation/bloc/product_cubit.dart';
 import 'package:owvds/features/production/loom_state/product_type/data/product_type_repository.dart';
@@ -23,6 +31,19 @@ class AppProviders {
     BlocProvider<LanguageCubit>(create: (context) => LanguageCubit()),
 
     // 2. HR & Admin Providers
+    BlocProvider<EmployeeCubit>(
+      create: (context) => EmployeeCubit(EmployeeRepository()),
+    ),
+    BlocProvider<DepartmentCubit>(
+      create: (context) => DepartmentCubit(DepartmentRepository()),
+    ),
+    BlocProvider<ShiftCubit>(
+      create: (context) => ShiftCubit(ShiftRepository()),
+    ),
+    BlocProvider<WorkScheduleCubit>(
+      create: (context) => WorkScheduleCubit(WorkScheduleRepository()),
+    ),
+
     // Sau này khi thêm các Cubit khác, bạn cũng bắt buộc phải viết rõ tên Cubit trong cặp ngoặc <>.
     // Ví dụ: BlocProvider<DepartmentCubit>(create: (context) => DepartmentCubit()),
     BlocProvider<AreaCubit>(create: (context) => AreaCubit(AreaRepository())),

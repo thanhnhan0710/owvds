@@ -258,12 +258,19 @@ class AdminSidebar extends StatelessWidget {
                     icon: Icons.people_alt_rounded,
                     title: l10n.hr,
                     childrenRoutes: [
+                      '/hr-dashboard', // [MỚI] Thêm đường dẫn cho HR Dashboard
                       '/departments',
                       '/employees',
                       '/shifts',
                       '/schedules',
                     ],
                     children: [
+                      // [MỚI] Nút trỏ về màn hình HR Dashboard
+                      _buildSubMenuItem(
+                        Icons.dashboard_customize,
+                        "Tổng quan Nhân sự",
+                        '/hr-dashboard',
+                      ),
                       _buildSubMenuItem(
                         Icons.domain,
                         l10n.departmentTitle,

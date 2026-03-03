@@ -3,6 +3,9 @@ import 'package:owvds/core/routes/go_router_refresh_stream.dart';
 import 'package:owvds/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:owvds/features/auth/presentation/screens/login_screen.dart';
 import 'package:owvds/features/home/presentation/screens/admin_dashboard_screen.dart';
+import 'package:owvds/features/hr/department/presentation/screens/department_screen.dart';
+import 'package:owvds/features/hr/employee/presentation/screens/employee_screen.dart';
+import 'package:owvds/features/hr/work_schedule/presentation/screens/work_schedule_screen.dart';
 import 'package:owvds/features/production/loom_state/presentation/screens/semi_finished_screen.dart';
 import 'package:owvds/features/production/machine/machine_assignment/presentation/screens/loom_dashboard_screen.dart';
 import 'package:owvds/features/production/machine/presentation/screens/macine_management_screen.dart';
@@ -41,6 +44,23 @@ class AppRouter {
         ),
 
         // HR
+        GoRoute(
+          path: '/hr-dashboard',
+          builder: (context, state) =>
+              const AdminDashboardScreen(), // Ta vẫn gọi vỏ bọc admin, admin sẽ load widget bên trong
+        ),
+        GoRoute(
+          path: '/employees',
+          builder: (context, state) => const EmployeeScreen(),
+        ),
+        GoRoute(
+          path: '/departments',
+          builder: (context, state) => const DepartmentScreen(),
+        ),
+        GoRoute(
+          path: '/schedules',
+          builder: (context, state) => const WorkScheduleScreen(),
+        ),
 
         // INVENTORY
 
