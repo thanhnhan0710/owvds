@@ -109,19 +109,6 @@ class _HrDashboardScreenState extends State<HrDashboardScreen> {
                     );
                   },
                 ),
-
-                _buildKpiCard(
-                  title: "Có mặt hôm nay",
-                  value: "--",
-                  icon: Icons.how_to_reg,
-                  color: Colors.green,
-                ),
-                _buildKpiCard(
-                  title: "Nghỉ phép",
-                  value: "--",
-                  icon: Icons.event_busy,
-                  color: Colors.orange,
-                ),
               ],
             ),
             const SizedBox(height: 32),

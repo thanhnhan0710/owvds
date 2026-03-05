@@ -3,6 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:owvds/features/hr/work_schedule/shift/domain/shift_model.dart';
 import 'package:owvds/features/hr/work_schedule/shift/presentation/bloc/shift_cubit.dart';
 
+import '../../../../../l10n/app_localizations.dart';
+import '../utils/schedule_dialog_helper.dart';
+
 class ScheduleSidebar extends StatelessWidget {
   final int? selectedShiftId;
   final Function(int?) onShiftSelected;
@@ -19,18 +22,23 @@ class ScheduleSidebar extends StatelessWidget {
 
   Color _getShiftColor(String shiftName) {
     String lower = shiftName.toLowerCase();
-    if (lower.contains('sáng') || lower.contains('a'))
+    if (lower.contains('sáng') || lower.contains('a')) {
       return Colors.orange.shade600;
-    if (lower.contains('chiều') || lower.contains('b'))
+    }
+    if (lower.contains('chiều') || lower.contains('b')) {
       return Colors.blue.shade600;
-    if (lower.contains('đêm') || lower.contains('c'))
+    }
+    if (lower.contains('đêm') || lower.contains('c')) {
       return Colors.indigo.shade600;
+    }
     if (lower.contains('hành chính')) return Colors.teal.shade600;
     return Colors.blueGrey;
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Container(
       width: 280,
       decoration: BoxDecoration(
@@ -43,22 +51,46 @@ class ScheduleSidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(Icons.access_time_filled, color: Color(0xFF003366)),
-                const SizedBox(width: 8),
-                const Text(
-                  "Các Ca Làm Việc",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Color(0xFF003366),
+                const Row(
+                  children: [
+                    Icon(
+                      Icons.access_time_filled,
+                      color: Color(0xFF003366),
+                      size: 20,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      "Các Ca Làm Việc",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Color(0xFF003366),
+                      ),
+                    ),
+                  ],
+                ),
+                // NÚT THÊM CA MỚI NẰM Ở ĐÂY
+                IconButton(
+                  icon: const Icon(
+                    Icons.add_circle_outline,
+                    color: Colors.blue,
+                  ),
+                  tooltip: "Thêm Ca mới",
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => ScheduleDialogHelper.showShiftEditDialog(
+                    context,
+                    null,
+                    l10n,
                   ),
                 ),
               ],
             ),
           ),
 
-          // [MỚI] BỘ LỌC DANH SÁCH TĂNG CA
+          // BỘ LỌC DANH SÁCH TĂNG CA
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
@@ -96,8 +128,10 @@ class ScheduleSidebar extends StatelessWidget {
           Expanded(
             child: BlocBuilder<ShiftCubit, ShiftState>(
               builder: (context, state) {
-                if (state is ShiftLoading)
+                if (state is ShiftLoading) {
                   return const Center(child: CircularProgressIndicator());
+                }
+
                 if (state is ShiftLoaded) {
                   List<Shift> allShifts = List.from(state.shifts);
                   allShifts.sort((a, b) => a.id.compareTo(b.id));
@@ -122,6 +156,64 @@ class ScheduleSidebar extends StatelessWidget {
                           color: _getShiftColor(shift.name),
                           isSelected: selectedShiftId == shift.id,
                           onTap: () => onShiftSelected(shift.id),
+                          // NÚT SỬA VÀ XÓA CA NẰM Ở ĐÂY (DẤU 3 CHẤM)
+                          trailing: PopupMenuButton<String>(
+                            icon: const Icon(
+                              Icons.more_vert,
+                              size: 18,
+                              color: Colors.grey,
+                            ),
+                            padding: EdgeInsets.zero,
+                            onSelected: (val) {
+                              if (val == 'edit') {
+                                ScheduleDialogHelper.showShiftEditDialog(
+                                  context,
+                                  shift,
+                                  l10n,
+                                );
+                              }
+                              if (val == 'delete') {
+                                ScheduleDialogHelper.confirmDeleteShift(
+                                  context,
+                                  shift,
+                                  l10n,
+                                );
+                              }
+                            },
+                            itemBuilder: (_) => [
+                              const PopupMenuItem(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.edit,
+                                      size: 16,
+                                      color: Colors.blue,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text("Sửa ca"),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.delete,
+                                      size: 16,
+                                      color: Colors.red,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      "Xóa ca",
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         );
                       }),
                     ],
@@ -143,6 +235,7 @@ class ScheduleSidebar extends StatelessWidget {
     required Color color,
     required bool isSelected,
     required VoidCallback onTap,
+    Widget? trailing,
   }) {
     return InkWell(
       onTap: onTap,
@@ -186,6 +279,7 @@ class ScheduleSidebar extends StatelessWidget {
                 ],
               ),
             ),
+            ?trailing,
           ],
         ),
       ),

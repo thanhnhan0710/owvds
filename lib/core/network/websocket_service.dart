@@ -29,12 +29,12 @@ class WebSocketService {
 
       // 3. [QUAN TRỌNG NHẤT]: Ép cứng gọi về cổng 8000 của Backend và Endpoint /ws/updates
       // Bỏ qua html.window.location.port vì đó là cổng của Flutter Web
-      return '$protocol://$host:8000/ws/updates';
+      return '$protocol://$host:8002/ws/updates';
     }
 
     // Nếu build ra Mobile/Desktop (APK, iOS, Windows):
     // Đổi 127.0.0.1 thành IP LAN (VD: 192.168.1.5) hoặc 10.0.2.2 (nếu dùng máy ảo Android)
-    return 'ws://127.0.0.1:8000/ws/updates';
+    return 'ws://127.0.0.1:8002/ws/updates';
   }
 
   void connect() {

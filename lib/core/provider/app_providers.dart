@@ -12,6 +12,14 @@ import 'package:owvds/features/hr/work_schedule/data/work_schedule_repository.da
 import 'package:owvds/features/hr/work_schedule/presentation/bloc/work_schedule_cubit.dart';
 import 'package:owvds/features/hr/work_schedule/shift/data/shift_repository.dart';
 import 'package:owvds/features/hr/work_schedule/shift/presentation/bloc/shift_cubit.dart';
+import 'package:owvds/features/inventory/material/data/material_repository.dart';
+import 'package:owvds/features/inventory/material/presentation/bloc/material_cubit.dart';
+import 'package:owvds/features/inventory/material_type/data/material_type_repository.dart';
+import 'package:owvds/features/inventory/material_type/presentation/bloc/material_type_cubit.dart';
+import 'package:owvds/features/inventory/supplier/data/supplier_repository.dart';
+import 'package:owvds/features/inventory/supplier/presentation/bloc/supplier_cubit.dart';
+import 'package:owvds/features/inventory/supplier_category/data/supplier_category_repository.dart';
+import 'package:owvds/features/inventory/supplier_category/presentation/bloc/supplier_category_cubit.dart';
 import 'package:owvds/features/production/loom_state/product/data/product_repository.dart';
 import 'package:owvds/features/production/loom_state/product/presentation/bloc/product_cubit.dart';
 import 'package:owvds/features/production/loom_state/product_type/data/product_type_repository.dart';
@@ -54,6 +62,18 @@ class AppProviders {
     BlocProvider<AreaCubit>(create: (context) => AreaCubit(AreaRepository())),
 
     // 3. Inventory Providers
+    BlocProvider<SupplierCategoryCubit>(
+      create: (context) => SupplierCategoryCubit(SupplierCategoryRepository()),
+    ),
+    BlocProvider<SupplierCubit>(
+      create: (context) => SupplierCubit(SupplierRepository()),
+    ),
+    BlocProvider<MaterialCubit>(
+      create: (context) => MaterialCubit(MaterialRepository()),
+    ),
+    BlocProvider<MaterialTypeCubit>(
+      create: (context) => MaterialTypeCubit(MaterialTypeRepository()),
+    ),
 
     // 4. Production Providers
     BlocProvider<ProductTypeCubit>(

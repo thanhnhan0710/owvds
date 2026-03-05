@@ -73,19 +73,15 @@ class _DailyScheduleViewState extends State<DailyScheduleView>
     return woy;
   }
 
-  // --- LOGIC LỌC LỊCH LÀM VIỆC ---
   List<WorkSchedule> _filterSchedules(List<WorkSchedule> all, DateTime date) {
     String dateStr = DateFormat('yyyy-MM-dd').format(date);
     var filtered = all.where((s) => s.workDate == dateStr).toList();
 
-    // Lọc theo Ca bên Sidebar
     if (widget.selectedShiftId != null) {
       filtered = filtered
           .where((s) => s.shiftId == widget.selectedShiftId)
           .toList();
     }
-
-    // Lọc hiển thị chỉ những người có Tăng ca
     if (widget.showOnlyOvertime) {
       filtered = filtered.where((s) => s.overtimeHours > 0).toList();
     }
@@ -123,7 +119,7 @@ class _DailyScheduleViewState extends State<DailyScheduleView>
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // HEADER BAR
+            // --- HEADER BAR ĐÃ SỬA LỖI TRÀN MÀN HÌNH ---
             Container(
               color: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -142,6 +138,8 @@ class _DailyScheduleViewState extends State<DailyScheduleView>
                     ),
                   ),
                   const SizedBox(width: 16),
+
+                  // Phần tiêu đề (Bọc trong Expanded)
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,10 +149,12 @@ class _DailyScheduleViewState extends State<DailyScheduleView>
                               ? "Danh Sách Tăng Ca"
                               : "Lịch Phân Công",
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: 18, // Giảm nhẹ fontSize để tiết kiệm chỗ
                             fontWeight: FontWeight.bold,
                             color: Colors.grey.shade800,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           "Tuần ${_getWeekNumber(_currentDate)} • Năm ${_currentDate.year}",
@@ -167,44 +167,53 @@ class _DailyScheduleViewState extends State<DailyScheduleView>
                       ],
                     ),
                   ),
+
+                  // Cụm Nút bấm (Sử dụng Wrap để tự rớt dòng nếu thiếu chỗ)
                   if (isDesktop) ...[
-                    _buildDateNavigator(isFullWidth: false),
                     const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      onPressed: () =>
-                          ScheduleDialogHelper.showAddOvertimeDialog(
-                            context,
-                            _currentDate,
+                    Wrap(
+                      spacing: 8, // Khoảng cách ngang giữa các nút
+                      runSpacing: 8, // Khoảng cách dọc nếu rớt dòng
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      alignment: WrapAlignment.end,
+                      children: [
+                        _buildDateNavigator(isFullWidth: false),
+                        ElevatedButton.icon(
+                          onPressed: () =>
+                              ScheduleDialogHelper.showAddOvertimeDialog(
+                                context,
+                                _currentDate,
+                              ),
+                          icon: const Icon(Icons.more_time, size: 16),
+                          label: const Text("TĂNG CA"), // Làm ngắn text lại
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange.shade700,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
                           ),
-                      icon: const Icon(Icons.more_time, size: 16),
-                      label: const Text("THÊM TĂNG CA"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange.shade700,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      onPressed: () =>
-                          ScheduleDialogHelper.showQuickScheduleDialog(
-                            context,
-                            l10n,
-                            _currentDate,
+                        ElevatedButton.icon(
+                          onPressed: () =>
+                              ScheduleDialogHelper.showQuickScheduleDialog(
+                                context,
+                                l10n,
+                                _currentDate,
+                              ),
+                          icon: const Icon(Icons.calendar_month, size: 16),
+                          label: const Text("XẾP CA"), // Làm ngắn text lại
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _primaryColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
                           ),
-                      icon: const Icon(Icons.calendar_month, size: 16),
-                      label: const Text("XẾP CA CHÍNH"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ],
@@ -311,7 +320,6 @@ class _DailyScheduleViewState extends State<DailyScheduleView>
                           return _buildEmptyState(day, l10n);
                         }
 
-                        // Truyền thêm l10n xuống
                         return _buildGroupedScheduleView(dailyList, l10n);
                       }).toList(),
                     ),
@@ -475,7 +483,7 @@ class _DailyScheduleViewState extends State<DailyScheduleView>
                                             context,
                                             s,
                                             allEmployees,
-                                            l10n, // Truyền l10n xuống
+                                            l10n,
                                           ),
                                         )
                                         .toList(),

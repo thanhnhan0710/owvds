@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:owvds/features/hr/share/presentation/screens/hr_dashboard_screen.dart';
+import 'package:owvds/features/inventory/share/presentation/screens/warehouse_dashboard_screen.dart';
 import 'package:owvds/l10n/app_localizations.dart';
 
 import '../../../../core/widgets/responsive_layout.dart';
@@ -14,6 +15,7 @@ import '../widgets/dashboard_content.dart';
 
 // Import màn hình Production Dashboard
 import '../../../production/share/presentation/screens/production_dashboard.dart';
+// [MỚI] Import màn hình HR Dashboard
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -161,7 +163,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         // Nên ta trả về thẳng widget này mà không cần bọc gì thêm
                         return const HrDashboardScreen();
                       }
-                      // 4. Các trang khác chưa có giao diện lồng vào
+                      // 4. [MỚI] Điều hướng đến trang Warehouse Dashboard
+                      else if (currentPath == '/warehouse-dashboard' ||
+                          currentPath == '/warehouse') {
+                        return const WarehouseDashboardScreen();
+                      }
+                      // 5. Các trang khác chưa có giao diện lồng vào
                       else {
                         return SingleChildScrollView(
                           padding: const EdgeInsets.all(24),

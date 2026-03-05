@@ -106,6 +106,7 @@ class AdminSidebar extends StatelessWidget {
                     icon: Icons.inventory_2_rounded,
                     title: l10n.inventory,
                     childrenRoutes: [
+                      '/warehouse-dashboard',
                       '/warehouses',
                       '/materials',
                       '/suppliers',
@@ -120,6 +121,11 @@ class AdminSidebar extends StatelessWidget {
                       '/batches',
                     ],
                     children: [
+                      _buildSubMenuItem(
+                        Icons.dashboard_customize,
+                        "Tổng quan Kho",
+                        '/warehouse-dashboard',
+                      ),
                       _buildSubMenuItem(
                         Icons.storefront_rounded,
                         l10n.generalInfo,
