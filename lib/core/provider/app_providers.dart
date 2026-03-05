@@ -6,6 +6,8 @@ import 'package:owvds/features/hr/department/data/department_repository.dart';
 import 'package:owvds/features/hr/department/presentation/bloc/department_cubit.dart';
 import 'package:owvds/features/hr/employee/data/employee_repository.dart';
 import 'package:owvds/features/hr/employee/presentation/bloc/employee_cubit.dart';
+import 'package:owvds/features/hr/employee_group/data/employee_group_repository.dart';
+import 'package:owvds/features/hr/employee_group/presentation/bloc/employee_group_cubit.dart';
 import 'package:owvds/features/hr/work_schedule/data/work_schedule_repository.dart';
 import 'package:owvds/features/hr/work_schedule/presentation/bloc/work_schedule_cubit.dart';
 import 'package:owvds/features/hr/work_schedule/shift/data/shift_repository.dart';
@@ -42,6 +44,9 @@ class AppProviders {
     ),
     BlocProvider<WorkScheduleCubit>(
       create: (context) => WorkScheduleCubit(WorkScheduleRepository()),
+    ),
+    BlocProvider<EmployeeGroupCubit>(
+      create: (context) => EmployeeGroupCubit(EmployeeGroupRepository()),
     ),
 
     // Sau này khi thêm các Cubit khác, bạn cũng bắt buộc phải viết rõ tên Cubit trong cặp ngoặc <>.

@@ -3,12 +3,15 @@ class WorkSchedule {
   final String workDate;
   final int employeeId;
   final int shiftId;
-  
+
   // Nested Objects (Read-only for display)
   final String? employeeName;
   final String? shiftName;
   final String? startTime;
   final String? endTime;
+
+  // [MỚI] Trường lưu số giờ tăng ca
+  final double overtimeHours;
 
   WorkSchedule({
     required this.id,
@@ -19,6 +22,7 @@ class WorkSchedule {
     this.shiftName,
     this.startTime,
     this.endTime,
+    this.overtimeHours = 0.0, // Mặc định là 0
   });
 
   factory WorkSchedule.fromJson(Map<String, dynamic> json) {
@@ -31,11 +35,14 @@ class WorkSchedule {
       workDate: json['work_date'] ?? '',
       employeeId: json['employee_id'] ?? 0,
       shiftId: json['shift_id'] ?? 0,
-      
+
       employeeName: empObj != null ? empObj['full_name'] : null,
       shiftName: shiftObj != null ? shiftObj['shift_name'] : null,
       startTime: shiftObj != null ? shiftObj['start_time'] : null,
       endTime: shiftObj != null ? shiftObj['end_time'] : null,
+
+      // [MỚI] Parse an toàn từ dynamic sang double
+      overtimeHours: (json['overtime_hours'] ?? 0.0).toDouble(),
     );
   }
 
@@ -44,6 +51,7 @@ class WorkSchedule {
       'work_date': workDate,
       'employee_id': employeeId,
       'shift_id': shiftId,
+      'overtime_hours': overtimeHours, // [MỚI] Gửi số giờ tăng ca lên BE
     };
   }
 }

@@ -144,10 +144,21 @@ class _HrDashboardScreenState extends State<HrDashboardScreen> {
               mainAxisSpacing: 16,
               childAspectRatio: isMobile ? 3.0 : 2.5,
               children: [
+                // [ĐÃ SỬA]: Chuyển thành Cơ cấu Tổ chức và trỏ sang giao diện mới
+                _buildFeatureCard(
+                  context,
+                  title: "Cơ cấu Tổ chức",
+                  subtitle: "Bộ phận, Tổ & Nhân viên",
+                  icon: Icons.account_tree,
+                  color: Colors.teal,
+                  onTap: () {
+                    context.go('/organization');
+                  },
+                ),
                 _buildFeatureCard(
                   context,
                   title: "Danh sách Nhân viên",
-                  subtitle: "Quản lý hồ sơ, hợp đồng",
+                  subtitle: "Tra cứu hồ sơ toàn bộ",
                   icon: Icons.badge,
                   color: Colors.indigo,
                   onTap: () {
@@ -156,25 +167,12 @@ class _HrDashboardScreenState extends State<HrDashboardScreen> {
                 ),
                 _buildFeatureCard(
                   context,
-                  title: "Cơ cấu Bộ phận",
-                  subtitle: "Phòng ban, Chức vụ",
-                  icon: Icons.account_tree,
-                  color: Colors.teal,
-                  onTap: () {
-                    context.go('/departments');
-                  },
-                ),
-                // [ĐÃ SỬA] Điều hướng đến màn hình Schedule/Shift mới
-                _buildFeatureCard(
-                  context,
                   title: "Lịch làm việc (Ca)",
                   subtitle: "Phân ca, Xếp lịch dệt",
                   icon: Icons.calendar_month,
                   color: Colors.blueGrey,
                   onTap: () {
-                    context.go(
-                      '/schedules',
-                    ); // Cập nhật đường dẫn này ở app_router.dart
+                    context.go('/schedules');
                   },
                 ),
               ],

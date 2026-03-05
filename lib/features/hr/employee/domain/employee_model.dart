@@ -6,6 +6,7 @@ class Employee {
   final String address;
   final String position;
   final int departmentId;
+  final int? groupId; // [MỚI] Thêm ID của Tổ nhân viên (có thể null)
   final String note;
   final String avatarUrl;
 
@@ -17,6 +18,7 @@ class Employee {
     required this.address,
     required this.position,
     required this.departmentId,
+    this.groupId, // [MỚI]
     required this.note,
     required this.avatarUrl,
   });
@@ -30,6 +32,7 @@ class Employee {
       address: json['address'] ?? '',
       position: json['position'] ?? '',
       departmentId: json['department_id'] ?? 0,
+      groupId: json['group_id'], // [MỚI] Lấy từ JSON
       note: json['note'] ?? '',
       avatarUrl: json['avatar_url'] ?? '',
     );
@@ -43,6 +46,7 @@ class Employee {
       'address': address,
       'position': position,
       'department_id': departmentId,
+      if (groupId != null) 'group_id': groupId, // [MỚI] Đẩy lên Backend nếu có
       'note': note,
       'avatar_url': avatarUrl,
     };

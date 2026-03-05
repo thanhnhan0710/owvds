@@ -11,6 +11,7 @@ import '../../../../../l10n/app_localizations.dart';
 import '../../../../../core/constants/api_endpoints.dart';
 import '../../../../../core/network/websocket_service.dart';
 import '../../../department/presentation/bloc/department_cubit.dart';
+import '../../../employee_group/presentation/bloc/employee_group_cubit.dart'; // [MỚI] Import Cubit Tổ
 import '../../domain/employee_model.dart';
 import '../bloc/employee_cubit.dart';
 
@@ -36,6 +37,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     super.initState();
     context.read<EmployeeCubit>().loadPage(1);
     context.read<DepartmentCubit>().loadDepartments();
+    context.read<EmployeeGroupCubit>().loadGroups(); // [MỚI] Tải danh sách tổ
 
     WebSocketService().connect();
     WebSocketService().addListener(_onWebSocketMessage);
@@ -57,6 +59,10 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     }
     if (message == "REFRESH_DEPARTMENTS" && mounted) {
       context.read<DepartmentCubit>().loadDepartments();
+    }
+    if (message == "REFRESH_EMPLOYEE_GROUPS" && mounted) {
+      // [MỚI] Lắng nghe đổi Tổ
+      context.read<EmployeeGroupCubit>().loadGroups();
     }
   }
 
@@ -96,10 +102,11 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     try {
       await launchUrl(Uri(scheme: 'tel', path: phoneNumber));
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Cannot make phone call')));
+      }
     }
   }
 
@@ -108,10 +115,11 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     try {
       await launchUrl(Uri(scheme: 'mailto', path: email));
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Cannot open email app')));
+      }
     }
   }
 
@@ -515,13 +523,17 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                       ),
                       DataColumn(
                         label: Text(
+                          "TỔ",
+                          style: _headerStyle,
+                        ), // [MỚI] Thêm cột Tổ
+                      ),
+                      DataColumn(
+                        label: Text(
                           l10n.position.toUpperCase(),
                           style: _headerStyle,
                         ),
                       ),
-                      DataColumn(
-                        label: Text("LIÊN HỆ", style: _headerStyle),
-                      ), // [CẬP NHẬT]
+                      DataColumn(label: Text("LIÊN HỆ", style: _headerStyle)),
                       DataColumn(
                         label: Text(
                           l10n.actions.toUpperCase(),
@@ -555,6 +567,13 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                             ),
                           ),
                           DataCell(
+                            _GroupBadge(
+                              // [MỚI] Data Cell cho Tổ
+                              groupId: emp.groupId,
+                              isChip: true,
+                            ),
+                          ),
+                          DataCell(
                             Text(
                               emp.position,
                               style: const TextStyle(
@@ -562,7 +581,6 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                               ),
                             ),
                           ),
-                          // [MỚI] Hiển thị rõ cả text và icon cho Liên hệ
                           DataCell(
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -723,6 +741,12 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                             deptId: emp.departmentId,
                             isChip: false,
                           ),
+                          const SizedBox(height: 4),
+                          _GroupBadge(
+                            // [MỚI] Hiển thị Tổ trên Mobile
+                            groupId: emp.groupId,
+                            isChip: false,
+                          ),
                         ],
                       ),
                     ),
@@ -766,7 +790,6 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Divider(height: 1, color: Colors.grey.shade100),
               ),
-              // [MỚI] Hiển thị liên hệ dạng cột để dễ chạm trên mobile
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -863,12 +886,14 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
     final noteCtrl = TextEditingController(text: emp?.note ?? '');
 
     int? selectedDeptId = emp?.departmentId ?? _selectedDepartmentId;
+    int? selectedGroupId = emp?.groupId;
 
     PlatformFile? pickedFile;
     Uint8List? pickedBytes;
 
     final employeeCubit = context.read<EmployeeCubit>();
     final departmentCubit = context.read<DepartmentCubit>();
+    final employeeGroupCubit = context.read<EmployeeGroupCubit>(); // [MỚI]
 
     final formKey = GlobalKey<FormState>();
 
@@ -879,6 +904,9 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
         providers: [
           BlocProvider.value(value: employeeCubit),
           BlocProvider.value(value: departmentCubit),
+          BlocProvider.value(
+            value: employeeGroupCubit,
+          ), // [MỚI] Provide Group Cubit
         ],
         child: StatefulBuilder(
           builder: (context, setStateDialog) {
@@ -984,12 +1012,14 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                           controller: emailCtrl,
                           decoration: _inputDeco("${l10n.email} *"),
                           validator: (v) {
-                            if (v == null || v.trim().isEmpty)
+                            if (v == null || v.trim().isEmpty) {
                               return "Required";
+                            }
                             if (!RegExp(
                               r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                            ).hasMatch(v))
+                            ).hasMatch(v)) {
                               return "Invalid email address";
+                            }
                             return null;
                           },
                         ),
@@ -1000,6 +1030,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                           keyboardType: TextInputType.phone,
                         ),
                         const SizedBox(height: 16),
+                        // Dropdown Phòng Ban
                         DropdownButtonFormField<int>(
                           value: selectedDeptId,
                           decoration: _inputDeco(l10n.department),
@@ -1014,9 +1045,60 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                                     )
                                     .toList()
                               : [],
-                          onChanged: (val) =>
-                              setStateDialog(() => selectedDeptId = val),
+                          onChanged: (val) {
+                            setStateDialog(() {
+                              selectedDeptId = val;
+                              selectedGroupId =
+                                  null; // Reset tổ khi đổi phòng ban
+                            });
+                          },
                           validator: (v) => v == null ? "Required" : null,
+                        ),
+                        const SizedBox(height: 16),
+                        // [MỚI] Dropdown Tổ Nhân Viên
+                        BlocBuilder<EmployeeGroupCubit, EmployeeGroupState>(
+                          builder: (context, groupState) {
+                            List<DropdownMenuItem<int?>> groupItems = [
+                              const DropdownMenuItem(
+                                value: null,
+                                child: Text("Không thuộc tổ nào"),
+                              ),
+                            ];
+
+                            if (groupState is EmployeeGroupLoaded) {
+                              // Lọc tổ thuộc về bộ phận đang chọn
+                              final filteredGroups = groupState.groups
+                                  .where(
+                                    (g) => g.departmentId == selectedDeptId,
+                                  )
+                                  .toList();
+
+                              // Xác thực lại selectedGroupId tránh lỗi khi dropdown load danh sách mới
+                              if (selectedGroupId != null &&
+                                  !filteredGroups.any(
+                                    (g) => g.id == selectedGroupId,
+                                  )) {
+                                selectedGroupId = null;
+                              }
+
+                              groupItems.addAll(
+                                filteredGroups.map(
+                                  (g) => DropdownMenuItem(
+                                    value: g.id,
+                                    child: Text(g.name),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            return DropdownButtonFormField<int?>(
+                              value: selectedGroupId,
+                              decoration: _inputDeco("Thuộc Tổ (Tùy chọn)"),
+                              items: groupItems,
+                              onChanged: (val) =>
+                                  setStateDialog(() => selectedGroupId = val),
+                            );
+                          },
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
@@ -1055,6 +1137,7 @@ class _EmployeeScreenState extends State<EmployeeScreen> {
                         address: emp?.address ?? '',
                         position: positionCtrl.text,
                         departmentId: selectedDeptId!,
+                        groupId: selectedGroupId, // [MỚI] Thêm ID Tổ
                         note: noteCtrl.text,
                         avatarUrl: emp?.avatarUrl ?? '',
                       );
@@ -1203,6 +1286,100 @@ class _DepartmentBadge extends StatelessWidget {
           ),
           child: Text(
             deptName,
+            style: TextStyle(
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// [MỚI] Badge Tổ Nhân Viên
+class _GroupBadge extends StatelessWidget {
+  final int? groupId;
+  final bool isChip;
+  const _GroupBadge({required this.groupId, required this.isChip});
+
+  @override
+  Widget build(BuildContext context) {
+    if (groupId == null) {
+      if (isChip) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            "Chưa phân tổ",
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+      }
+      return Row(
+        children: [
+          Icon(Icons.circle, size: 8, color: Colors.grey.shade400),
+          const SizedBox(width: 6),
+          Text(
+            "Chưa phân tổ",
+            style: TextStyle(
+              color: Colors.grey.shade500,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return BlocBuilder<EmployeeGroupCubit, EmployeeGroupState>(
+      builder: (context, state) {
+        String groupName = "Loading...";
+        Color color = Colors.teal;
+
+        if (state is EmployeeGroupLoaded) {
+          final group = state.groups.where((g) => g.id == groupId).firstOrNull;
+          if (group != null) {
+            groupName = group.name;
+          } else {
+            groupName = "Không xác định";
+            color = Colors.grey;
+          }
+        }
+
+        if (!isChip) {
+          return Row(
+            children: [
+              Icon(Icons.circle, size: 8, color: color),
+              const SizedBox(width: 6),
+              Text(
+                groupName,
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          );
+        }
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            groupName,
             style: TextStyle(
               fontSize: 11,
               color: color,

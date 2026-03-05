@@ -80,6 +80,31 @@ class EmployeeRepository {
     }
   }
 
+  // ===============================================
+  // [MỚI] Lấy danh sách nhân viên theo Tổ (Group)
+  // ===============================================
+  Future<List<Employee>> getEmployeesByGroup(
+    int groupId, {
+    int skip = 0,
+    int limit = 20,
+  }) async {
+    try {
+      // Đường dẫn API này phải khớp với FastAPI mà bạn thiết lập
+      final response = await _dio.get(
+        '/api/v1/employees/group/$groupId',
+        queryParameters: {'skip': skip, 'limit': limit},
+      );
+      if (response.data is List) {
+        return (response.data as List)
+            .map((e) => Employee.fromJson(e))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      throw Exception("Failed to load employees for group $groupId: $e");
+    }
+  }
+
   Future<void> createEmployee(Employee emp) async {
     try {
       await _dio.post('/api/v1/employees/', data: emp.toJson());

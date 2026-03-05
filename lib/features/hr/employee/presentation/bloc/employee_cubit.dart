@@ -15,7 +15,7 @@ class EmployeeLoaded extends EmployeeState {
   final List<Employee> employees;
   final int currentPage;
   final bool hasMore;
-  final int totalCount; // [MỚI] Lưu tổng số lượng chính xác
+  final int totalCount;
 
   EmployeeLoaded({
     required this.employees,
@@ -36,8 +36,11 @@ class EmployeeCubit extends Cubit<EmployeeState> {
 
   int _currentPage = 1;
   final int _pageSize = 20;
+
+  // Trạng thái lưu bộ lọc
   String _currentKeyword = '';
   int? _currentDepartmentId;
+  int? _currentGroupId; // [MỚI] Thêm biến lưu group_id
 
   EmployeeCubit(this._repo) : super(EmployeeInitial());
 
@@ -48,15 +51,23 @@ class EmployeeCubit extends Cubit<EmployeeState> {
       final skip = (_currentPage - 1) * _pageSize;
       List<Employee> list;
 
-      if (_currentDepartmentId != null) {
-        list = await _repo.getEmployeesByDepartmentId(
-          _currentDepartmentId!,
+      // Ưu tiên chạy bộ lọc theo thứ tự cụ thể hơn: Từ khóa -> Tổ -> Bộ phận
+      if (_currentKeyword.isNotEmpty) {
+        list = await _repo.searchEmployees(
+          _currentKeyword,
           skip: skip,
           limit: _pageSize,
         );
-      } else if (_currentKeyword.isNotEmpty) {
-        list = await _repo.searchEmployees(
-          _currentKeyword,
+      } else if (_currentGroupId != null) {
+        // [MỚI] Lọc theo Tổ
+        list = await _repo.getEmployeesByGroup(
+          _currentGroupId!,
+          skip: skip,
+          limit: _pageSize,
+        );
+      } else if (_currentDepartmentId != null) {
+        list = await _repo.getEmployeesByDepartmentId(
+          _currentDepartmentId!,
           skip: skip,
           limit: _pageSize,
         );
@@ -64,7 +75,9 @@ class EmployeeCubit extends Cubit<EmployeeState> {
         list = await _repo.getEmployees(skip: skip, limit: _pageSize);
       }
 
-      // [MỚI] Lấy con số chính xác tuyệt đối từ Database
+      // Lấy con số chính xác tuyệt đối từ Database (Tính năng cũ bạn yêu cầu)
+      // *Lưu ý: Nếu lọc theo Bộ phận/Tổ, số count này cần phải được API BE xử lý lại
+      // để đếm chính xác số NV trong bộ phận/tổ đó thay vì toàn xưởng.
       final exactTotal = await _repo.getEmployeeCount();
 
       emit(
@@ -82,19 +95,32 @@ class EmployeeCubit extends Cubit<EmployeeState> {
 
   Future<void> loadEmployees() async {
     _currentDepartmentId = null;
+    _currentGroupId = null; // Reset Group
     _currentKeyword = '';
     await loadPage(_currentPage);
   }
 
   Future<void> loadEmployeesByDepartment(int departmentId) async {
     _currentDepartmentId = departmentId;
+    _currentGroupId = null; // Chọn bộ phận thì reset Tổ
     _currentKeyword = '';
+    await loadPage(1);
+  }
+
+  // ===========================================
+  // [MỚI] Hàm Load nhân viên theo Tổ
+  // ===========================================
+  Future<void> loadEmployeesByGroup(int groupId) async {
+    _currentGroupId = groupId;
+    _currentKeyword = '';
+    // Lưu ý: Không cần reset _currentDepartmentId để biết đang ở Bộ phận nào
     await loadPage(1);
   }
 
   Future<void> searchEmployees(String keyword) async {
     _currentKeyword = keyword.trim();
     _currentDepartmentId = null;
+    _currentGroupId = null;
     await loadPage(1);
   }
 
@@ -105,8 +131,9 @@ class EmployeeCubit extends Cubit<EmployeeState> {
   }) async {
     try {
       String finalAvatarUrl = employee.avatarUrl;
-      if (imageFile != null)
+      if (imageFile != null) {
         finalAvatarUrl = await _repo.uploadAvatar(imageFile);
+      }
 
       final Employee finalEmployee = Employee(
         id: employee.id,
@@ -116,6 +143,7 @@ class EmployeeCubit extends Cubit<EmployeeState> {
         address: employee.address,
         position: employee.position,
         departmentId: employee.departmentId,
+        groupId: employee.groupId, // [MỚI] Gửi cả groupId lên
         note: employee.note,
         avatarUrl: finalAvatarUrl,
       );

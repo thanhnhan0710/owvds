@@ -5,6 +5,7 @@ import 'package:owvds/features/auth/presentation/screens/login_screen.dart';
 import 'package:owvds/features/home/presentation/screens/admin_dashboard_screen.dart';
 import 'package:owvds/features/hr/department/presentation/screens/department_screen.dart';
 import 'package:owvds/features/hr/employee/presentation/screens/employee_screen.dart';
+import 'package:owvds/features/hr/organization/screens/organization_screen.dart';
 import 'package:owvds/features/hr/work_schedule/presentation/screens/work_schedule_screen.dart';
 import 'package:owvds/features/production/loom_state/presentation/screens/semi_finished_screen.dart';
 import 'package:owvds/features/production/machine/machine_assignment/presentation/screens/loom_dashboard_screen.dart';
@@ -60,6 +61,11 @@ class AppRouter {
         GoRoute(
           path: '/schedules',
           builder: (context, state) => const WorkScheduleScreen(),
+        ),
+
+        GoRoute(
+          path: '/organization',
+          builder: (context, state) => const OrganizationScreen(),
         ),
 
         // INVENTORY
