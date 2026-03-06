@@ -7,6 +7,7 @@ import 'package:owvds/features/hr/department/presentation/screens/department_scr
 import 'package:owvds/features/hr/employee/presentation/screens/employee_screen.dart';
 import 'package:owvds/features/hr/organization/screens/organization_screen.dart';
 import 'package:owvds/features/hr/work_schedule/presentation/screens/work_schedule_screen.dart';
+import 'package:owvds/features/inventory/PO/presentation/screens/purchase_oder_screen.dart';
 import 'package:owvds/features/inventory/material/presentation/screens/material_management_screen.dart';
 import 'package:owvds/features/inventory/share/presentation/screens/warehouse_dashboard_screen.dart';
 import 'package:owvds/features/inventory/supplier/presentation/screens/supplier_management_screen.dart';
@@ -83,6 +84,10 @@ class AppRouter {
         GoRoute(
           path: '/materials',
           builder: (context, state) => const MaterialManagementScreen(),
+        ),
+        GoRoute(
+          path: '/purchase-orders',
+          builder: (context, state) => const PurchaseOrderScreen(),
         ),
 
         // PRODUCTION

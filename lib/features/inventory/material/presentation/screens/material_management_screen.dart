@@ -1,9 +1,8 @@
-// [SỬA LỖI 1]: Ẩn MaterialState của Flutter
 import 'package:flutter/material.dart' hide MaterialState;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:file_saver/file_saver.dart';
 
 import 'package:owvds/features/inventory/material/presentation/widgets/material_type_slidebar.dart';
-// [SỬA LỖI 2]: Đã bổ sung import file MaterialListView
 import 'package:owvds/features/inventory/material/presentation/widgets/material_list_view.dart';
 
 import 'package:owvds/features/inventory/material_type/presentation/bloc/material_type_cubit.dart';
@@ -29,7 +28,7 @@ class _MaterialManagementScreenState extends State<MaterialManagementScreen> {
   String _searchQuery = "";
 
   int _currentPage = 1;
-  final int _pageSize = 20; // Số lượng bản ghi trên 1 trang
+  final int _pageSize = 20;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -39,7 +38,7 @@ class _MaterialManagementScreenState extends State<MaterialManagementScreen> {
 
     // 1. Tải danh mục phụ (Loại NVL & Nhà cung cấp)
     context.read<MaterialTypeCubit>().loadTypes();
-    context.read<SupplierCubit>().loadSuppliers(); // Để lấy cho Dropdown
+    context.read<SupplierCubit>().loadSuppliers();
 
     // 2. Tải danh sách NVL chính
     _fetchMaterials();
@@ -49,7 +48,6 @@ class _MaterialManagementScreenState extends State<MaterialManagementScreen> {
     WebSocketService().addListener(_onWebSocketMessage);
   }
 
-  // Hàm gọi API với ĐÚNG cấu hình trang hiện tại
   void _fetchMaterials() {
     context.read<MaterialCubit>().loadMaterials(
       typeId: _selectedTypeId,
@@ -60,14 +58,12 @@ class _MaterialManagementScreenState extends State<MaterialManagementScreen> {
     );
   }
 
-  // Lắng nghe sự kiện từ Server
   void _onWebSocketMessage(String message) {
     if (!mounted) return;
 
     if (message == "REFRESH_MATERIAL_TYPES") {
       context.read<MaterialTypeCubit>().loadTypes();
     } else if (message == "REFRESH_MATERIALS") {
-      // Khi server báo có người thay đổi NVL, chỉ load lại TRANG HIỆN TẠI (Page, Search, Bộ lọc giữ nguyên)
       _fetchMaterials();
     }
   }
@@ -78,12 +74,11 @@ class _MaterialManagementScreenState extends State<MaterialManagementScreen> {
     super.dispose();
   }
 
-  // --- CÁC HÀM XỬ LÝ SỰ KIỆN TỪ UI CON TÁC ĐỘNG LÊN STATE CHUNG ---
   void _onTypeSelected(int? typeId, String typeName) {
     setState(() {
       _selectedTypeId = typeId;
       _selectedTypeName = typeName;
-      _currentPage = 1; // Reset về trang 1 khi đổi bộ lọc
+      _currentPage = 1;
     });
     _fetchMaterials();
 
@@ -120,19 +115,45 @@ class _MaterialManagementScreenState extends State<MaterialManagementScreen> {
   Widget build(BuildContext context) {
     final isDesktop = ResponsiveLayout.isDesktop(context);
 
-    // Lắng nghe trạng thái Export Excel (nếu Cubit bắn ra bytes)
     return BlocListener<MaterialCubit, MaterialState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is MaterialExportSuccess) {
-          // Bạn có thể cài file_saver để save byte ra máy người dùng
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                "Đã tạo xong file Excel. Vui lòng kiểm tra thư mục tải xuống.",
+          try {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Đang lưu file..."),
+                duration: Duration(seconds: 1),
               ),
-              backgroundColor: Colors.green,
-            ),
-          );
+            );
+
+            // [ĐÃ SỬA LỖI]: Bỏ tham số 'ext', đưa trực tiếp đuôi '.xlsx' vào tham số 'name' hoặc sử dụng đúng API của bản file_saver mới
+            // Trong bản file_saver mới, tham số ext thường được thay thế bằng cách thêm vào name, hoặc thuộc tính `ext` được dùng nhưng yêu cầu kiểu chuỗi, hoặc đã bị deprecate.
+            // Cách an toàn nhất là để `name` có sẵn đuôi file hoặc chỉ dùng `mimeType`.
+            await FileSaver.instance.saveFile(
+              name:
+                  "Danh_Muc_NVL_${DateTime.now().millisecondsSinceEpoch}.xlsx", // Đưa thẳng đuôi file vào tên
+              bytes: state.bytes,
+              mimeType: MimeType.microsoftExcel,
+            );
+
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Tải file Excel thành công!"),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Lỗi khi lưu file: $e"),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
         }
       },
       child: Scaffold(

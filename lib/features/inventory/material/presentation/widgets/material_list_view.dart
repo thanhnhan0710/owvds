@@ -194,8 +194,7 @@ class _MaterialListViewState extends State<MaterialListView> {
                               ? state.suppliers
                               : [];
                           return DropdownButtonFormField<int?>(
-                            isExpanded:
-                                true, // [SỬA LỖI Ở ĐÂY]: Ép Dropdown phải nằm gọn trong SizedBox 250
+                            isExpanded: true,
                             value: widget.selectedSupplierId,
                             decoration: InputDecoration(
                               isDense: true,
@@ -355,7 +354,7 @@ class _MaterialListViewState extends State<MaterialListView> {
             DataColumn(
               numeric: true,
               label: Text(
-                'Tồn Min',
+                'Tồn Min (Kg)',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
@@ -488,26 +487,78 @@ class _MaterialListViewState extends State<MaterialListView> {
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
-            vertical: 8,
+            vertical: 12,
           ),
           title: Text(
             "[${item.materialCode}] ${item.materialName}",
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 "Loại: ${item.materialType?.typeName ?? "-"} | NCC: ${item.supplier?.shortName ?? "-"}",
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
+
+              // CÁC THẺ THÔNG SỐ (BADGES)
               Wrap(
                 spacing: 4,
+                runSpacing: 4,
                 children: [
                   if (item.color != null) _buildBadge(item.color!),
                   if (item.dtex != null) _buildBadge('Dtex: ${item.dtex}'),
                   if (item.filament != null) _buildBadge('F: ${item.filament}'),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // [MỚI BỔ SUNG]: THÔNG TIN TỒN MIN & QUY CÁCH DÀNH CHO MOBILE
+              Row(
+                children: [
+                  Icon(
+                    Icons.inventory_2_outlined,
+                    size: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    "Tồn min: ",
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  Text(
+                    "${item.minStockLevel.toStringAsFixed(1)} kg",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: item.minStockLevel > 0
+                          ? Colors.orange.shade700
+                          : Colors.black87,
+                    ),
+                  ),
+                  const Spacer(), // Đẩy phần quy cách sang bên phải
+                  Icon(
+                    Icons.scale_outlined,
+                    size: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    "Quy cách: ",
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                  Text(
+                    item.kgPerBobbin != null
+                        ? "${item.kgPerBobbin?.toStringAsFixed(1)} kg"
+                        : "-",
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
                 ],
               ),
             ],

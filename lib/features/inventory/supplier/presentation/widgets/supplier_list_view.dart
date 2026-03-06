@@ -1,10 +1,11 @@
 import 'dart:async'; // Cần thiết cho Timer (Debounce)
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'
+    hide MaterialState; // Hide để tránh conflict nếu có
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../domain/supplier_model.dart';
-import '../bloc/supplier_cubit.dart';
-import '../dialogs/supplier_dialog_helper.dart';
+import 'package:owvds/features/inventory/supplier/domain/supplier_model.dart';
+import 'package:owvds/features/inventory/supplier/presentation/bloc/supplier_cubit.dart';
+import 'package:owvds/features/inventory/supplier/presentation/dialogs/supplier_dialog_helper.dart';
 
 class SupplierListView extends StatefulWidget {
   final int? selectedCategoryId;

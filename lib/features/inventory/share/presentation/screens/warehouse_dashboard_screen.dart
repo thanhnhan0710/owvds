@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide MaterialState;
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 // Đảm bảo import đúng đường dẫn đến file AdminSidebar và ResponsiveLayout của bạn
 import 'package:owvds/features/home/presentation/widgets/admin_sidebar.dart';
 import 'package:owvds/core/widgets/responsive_layout.dart';
-import 'package:owvds/features/home/presentation/widgets/admin_topbar.dart';
+
+import 'package:owvds/features/inventory/material/presentation/bloc/material_cubit.dart';
 
 class WarehouseDashboardScreen extends StatefulWidget {
   const WarehouseDashboardScreen({super.key});
@@ -21,6 +23,13 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
   // Khai báo key để mở Drawer trên Mobile
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  @override
+  void initState() {
+    super.initState();
+    // Tải dữ liệu nguyên vật liệu khi mở Dashboard để lấy TotalCount
+    context.read<MaterialCubit>().loadMaterials();
+  }
+
   // Hàm xử lý điều hướng chung cho Sidebar
   void _onNavigate(String route) {
     if (ResponsiveLayout.isMobile(context) &&
@@ -30,6 +39,27 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
     if (route != '#') {
       context.go(route); // Chuyển trang
     }
+  }
+
+  // Tách riêng cụm Avatar và Thông báo để tái sử dụng
+  List<Widget> _buildAppBarActions() {
+    return [
+      IconButton(
+        icon: const Badge(
+          label: Text('3'),
+          child: Icon(Icons.notifications_active_outlined),
+        ),
+        onPressed: () {},
+        tooltip: "Cảnh báo tồn kho",
+      ),
+      const SizedBox(width: 8),
+      const CircleAvatar(
+        radius: 16,
+        backgroundColor: Color(0xFF003366),
+        child: Icon(Icons.person, color: Colors.white, size: 18),
+      ),
+      const SizedBox(width: 16),
+    ];
   }
 
   @override
@@ -64,23 +94,7 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
                 icon: const Icon(Icons.menu),
                 onPressed: () => _scaffoldKey.currentState?.openDrawer(),
               ),
-              actions: [
-                IconButton(
-                  icon: const Badge(
-                    label: Text('3'),
-                    child: Icon(Icons.notifications_active_outlined),
-                  ),
-                  onPressed: () {},
-                  tooltip: "Cảnh báo tồn kho",
-                ),
-                const SizedBox(width: 8),
-                const CircleAvatar(
-                  radius: 16,
-                  backgroundColor: Color(0xFF003366),
-                  child: Icon(Icons.person, color: Colors.white, size: 18),
-                ),
-                const SizedBox(width: 16),
-              ],
+              actions: _buildAppBarActions(),
             ),
 
       // Đưa Sidebar vào Drawer cho phiên bản Mobile/Tablet nhỏ
@@ -110,12 +124,31 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
           Expanded(
             child: Column(
               children: [
-                // TopBar cho Desktop
+                // Thanh Header nằm ngang cho Desktop
                 if (isDesktop)
-                  AdminTopBar(
-                    userName: userName,
-                    userRole: userRole,
-                    primaryColor: _primaryColor,
+                  Container(
+                    height: 64,
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey.shade200),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          "Bảng Điều Khiển - Kho NVL",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                            color: _primaryColor,
+                          ),
+                        ),
+                        const Spacer(),
+                        ..._buildAppBarActions(),
+                      ],
+                    ),
                   ),
 
                 // Nội dung chính
@@ -125,19 +158,6 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // --- Tiêu đề trang (Desktop) ---
-                        if (isDesktop) ...[
-                          Text(
-                            "Bảng Điều Khiển - Kho NVL",
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: _primaryColor,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                        ],
-
                         // --- PHẦN 1: TỔNG QUAN KPI ---
                         const Text(
                           "TỔNG QUAN TRONG NGÀY",
@@ -157,11 +177,19 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
                           mainAxisSpacing: 16,
                           childAspectRatio: isMobile ? 1.5 : 2.0,
                           children: [
-                            _buildKpiCard(
-                              title: "Mã NVL",
-                              value: "1,245",
-                              icon: Icons.category,
-                              color: Colors.blue,
+                            BlocBuilder<MaterialCubit, MaterialState>(
+                              builder: (context, state) {
+                                String countStr = "...";
+                                if (state is MaterialLoaded) {
+                                  countStr = state.totalCount.toString();
+                                }
+                                return _buildKpiCard(
+                                  title: "Mã NVL",
+                                  value: countStr,
+                                  icon: Icons.category,
+                                  color: Colors.blue,
+                                );
+                              },
                             ),
                             _buildKpiCard(
                               title: "Sắp hết hàng",
@@ -204,6 +232,15 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
                           mainAxisSpacing: 16,
                           childAspectRatio: isMobile ? 3.0 : 2.5,
                           children: [
+                            // [MỚI BỔ SUNG]: Link đi đến trang Quản lý Đơn mua hàng (PO)
+                            _buildFeatureCard(
+                              context,
+                              title: "Đơn Mua Hàng (PO)",
+                              subtitle: "Quản lý mua sắm vật tư",
+                              icon: Icons.shopping_cart,
+                              color: Colors.blueAccent,
+                              onTap: () => _onNavigate('/purchase-orders'),
+                            ),
                             _buildFeatureCard(
                               context,
                               title: "Nhà Cung Cấp",

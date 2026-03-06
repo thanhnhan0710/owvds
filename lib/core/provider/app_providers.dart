@@ -12,6 +12,14 @@ import 'package:owvds/features/hr/work_schedule/data/work_schedule_repository.da
 import 'package:owvds/features/hr/work_schedule/presentation/bloc/work_schedule_cubit.dart';
 import 'package:owvds/features/hr/work_schedule/shift/data/shift_repository.dart';
 import 'package:owvds/features/hr/work_schedule/shift/presentation/bloc/shift_cubit.dart';
+import 'package:owvds/features/inventory/PO/incoterm/data/incoterm_repository.dart';
+import 'package:owvds/features/inventory/PO/incoterm/presentation/bloc/incoterm_cubit.dart';
+import 'package:owvds/features/inventory/PO/po_detail/data/po_detail_repository.dart';
+import 'package:owvds/features/inventory/PO/po_detail/presentation/bloc/po_detail_cubit.dart';
+import 'package:owvds/features/inventory/PO/po_header/data/po_header_repository.dart';
+import 'package:owvds/features/inventory/PO/po_header/presentation/bloc/po_header_cubit.dart';
+import 'package:owvds/features/inventory/PO/po_status/data/po_status_repository.dart';
+import 'package:owvds/features/inventory/PO/po_status/presentation/bloc/po_status_cubit.dart';
 import 'package:owvds/features/inventory/material/data/material_repository.dart';
 import 'package:owvds/features/inventory/material/presentation/bloc/material_cubit.dart';
 import 'package:owvds/features/inventory/material_type/data/material_type_repository.dart';
@@ -73,6 +81,18 @@ class AppProviders {
     ),
     BlocProvider<MaterialTypeCubit>(
       create: (context) => MaterialTypeCubit(MaterialTypeRepository()),
+    ),
+    BlocProvider<IncotermCubit>(
+      create: (context) => IncotermCubit(IncotermRepository()),
+    ),
+    BlocProvider<POStatusCubit>(
+      create: (context) => POStatusCubit(POStatusRepository()),
+    ),
+    BlocProvider<POHeaderCubit>(
+      create: (context) => POHeaderCubit(POHeaderRepository()),
+    ),
+    BlocProvider<PODetailCubit>(
+      create: (context) => PODetailCubit(PODetailRepository()),
     ),
 
     // 4. Production Providers

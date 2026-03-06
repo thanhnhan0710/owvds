@@ -5,9 +5,21 @@ import '../domain/supplier_model.dart';
 class SupplierRepository {
   final Dio _dio = ApiClient().dio;
 
-  Future<int> getSupplierCount() async {
+  Future<int> getSupplierCount({
+    String? search,
+    int? categoryId,
+    bool? isActive,
+  }) async {
     try {
-      final response = await _dio.get('/api/v1/suppliers/count');
+      final queryParams = <String, dynamic>{};
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+      if (categoryId != null) queryParams['category_id'] = categoryId;
+      if (isActive != null) queryParams['is_active'] = isActive;
+
+      final response = await _dio.get(
+        '/api/v1/suppliers/count',
+        queryParameters: queryParams,
+      );
       return response.data as int;
     } catch (e) {
       return 0; // Trả về 0 nếu API chưa được implement ở Backend

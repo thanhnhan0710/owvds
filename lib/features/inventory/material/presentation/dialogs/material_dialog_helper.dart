@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' hide MaterialType;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dropdown_search/dropdown_search.dart';
 
 // Sử dụng Absolute Import để đảm bảo không bao giờ sai đường dẫn
 import 'package:owvds/features/inventory/material/domain/material_model.dart';
@@ -188,6 +189,7 @@ class MaterialDialogHelper {
                       Row(
                         children: [
                           Expanded(
+                            flex: 2, // ĐÃ ĐIỀU CHỈNH: Mã NVL chiếm 2 phần
                             child: TextFormField(
                               controller: codeCtrl,
                               decoration: _inputDeco("Mã NVL (*)"),
@@ -196,7 +198,7 @@ class MaterialDialogHelper {
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            flex: 2,
+                            flex: 1, // ĐÃ ĐIỀU CHỈNH: Tên NVL chiếm 1 phần
                             child: TextFormField(
                               controller: nameCtrl,
                               decoration: _inputDeco("Tên Nguyên vật liệu (*)"),
@@ -208,49 +210,105 @@ class MaterialDialogHelper {
                       const SizedBox(height: 16),
                       Row(
                         children: [
+                          // DROPDOWN SEARCH: TÌM LOẠI NVL
                           Expanded(
-                            child: DropdownButtonFormField<int>(
-                              isExpanded:
-                                  true, // [ĐÃ SỬA] Thêm isExpanded để chống tràn layout
-                              value: selectedTypeId,
-                              decoration: _inputDeco("Phân loại (*)"),
-                              validator: (v) => v == null ? "Bắt buộc" : null,
-                              items: types.map((t) {
-                                return DropdownMenuItem<int>(
-                                  value: t.typeId,
-                                  child: Text(
-                                    t.typeName,
-                                    style: const TextStyle(fontSize: 13),
-                                    maxLines: 1, // Ngăn text xuống dòng
-                                    overflow: TextOverflow.ellipsis,
+                            child: DropdownSearch<custom_model.MaterialType>(
+                              popupProps: PopupProps.menu(
+                                showSearchBox: true,
+                                searchFieldProps: TextFieldProps(
+                                  decoration: InputDecoration(
+                                    hintText: "Tìm phân loại...",
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 10,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
                                   ),
-                                );
-                              }).toList(),
-                              onChanged: (val) =>
-                                  setStateDialog(() => selectedTypeId = val),
+                                ),
+                              ),
+                              items: (filter, loadProps) => types
+                                  .where(
+                                    (t) => t.typeName.toLowerCase().contains(
+                                      filter.toLowerCase(),
+                                    ),
+                                  )
+                                  .toList(),
+                              itemAsString: (custom_model.MaterialType t) =>
+                                  t.typeName,
+                              compareFn: (item, selectedItem) =>
+                                  item.typeId == selectedItem.typeId,
+                              selectedItem: types
+                                  .where((t) => t.typeId == selectedTypeId)
+                                  .firstOrNull,
+                              decoratorProps: DropDownDecoratorProps(
+                                decoration: _inputDeco("Phân loại (*)"),
+                              ),
+                              validator: (v) => v == null ? "Bắt buộc" : null,
+                              onChanged: (val) => setStateDialog(
+                                () => selectedTypeId = val?.typeId,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 16),
+
+                          // DROPDOWN SEARCH: TÌM NHÀ CUNG CẤP
                           Expanded(
-                            child: DropdownButtonFormField<int>(
-                              isExpanded:
-                                  true, // [ĐÃ SỬA] Thêm isExpanded để chống tràn layout
-                              value: selectedSupplierId,
-                              decoration: _inputDeco("Nhà cung cấp (*)"),
-                              validator: (v) => v == null ? "Bắt buộc" : null,
-                              items: suppliers.map((s) {
-                                return DropdownMenuItem<int>(
-                                  value: s.supplierId,
-                                  child: Text(
-                                    s.supplierName,
-                                    style: const TextStyle(fontSize: 13),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                            child: DropdownSearch<Supplier>(
+                              popupProps: PopupProps.menu(
+                                showSearchBox: true,
+                                searchFieldProps: TextFieldProps(
+                                  decoration: InputDecoration(
+                                    hintText: "Tìm nhà cung cấp...",
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 10,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
                                   ),
-                                );
-                              }).toList(),
+                                ),
+                              ),
+                              items: (filter, loadProps) {
+                                // Tìm kiếm linh hoạt: khớp cả tên viết tắt và tên đầy đủ
+                                return suppliers.where((s) {
+                                  final keyword = filter.toLowerCase();
+                                  final shortMatch =
+                                      s.shortName?.toLowerCase().contains(
+                                        keyword,
+                                      ) ??
+                                      false;
+                                  final fullMatch = s.supplierName
+                                      .toLowerCase()
+                                      .contains(keyword);
+                                  return shortMatch || fullMatch;
+                                }).toList();
+                              },
+                              // Ưu tiên hiển thị Tên Viết Tắt. Nếu null hoặc rỗng thì mới hiện tên Đầy Đủ
+                              itemAsString: (Supplier s) {
+                                if (s.shortName != null &&
+                                    s.shortName!.trim().isNotEmpty) {
+                                  return s.shortName!;
+                                }
+                                return s.supplierName;
+                              },
+                              compareFn: (item, selectedItem) =>
+                                  item.supplierId == selectedItem.supplierId,
+                              selectedItem: suppliers
+                                  .where(
+                                    (s) => s.supplierId == selectedSupplierId,
+                                  )
+                                  .firstOrNull,
+                              decoratorProps: DropDownDecoratorProps(
+                                decoration: _inputDeco("Nhà cung cấp (*)"),
+                              ),
+                              validator: (v) => v == null ? "Bắt buộc" : null,
                               onChanged: (val) => setStateDialog(
-                                () => selectedSupplierId = val,
+                                () => selectedSupplierId = val?.supplierId,
                               ),
                             ),
                           ),

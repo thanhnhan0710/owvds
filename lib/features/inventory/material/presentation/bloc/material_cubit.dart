@@ -1,7 +1,5 @@
 import 'dart:typed_data';
 import 'package:flutter_bloc/flutter_bloc.dart';
-// Note: Bạn có thể cần import file_saver hoặc universal_html tùy vào nền tảng để lưu file
-// import 'package:file_saver/file_saver.dart';
 
 import '../../data/material_repository.dart';
 import '../../domain/material_model.dart';
@@ -36,6 +34,13 @@ class MaterialExportSuccess extends MaterialState {
 class MaterialCubit extends Cubit<MaterialState> {
   final MaterialRepository _repo;
 
+  // [MỚI] Lưu trữ các biến bộ lọc hiện tại để dùng lại khi Refresh
+  int? _currentTypeId;
+  int? _currentSupplierId;
+  String? _currentSearch;
+  int _currentSkip = 0;
+  int _currentLimit = 20;
+
   MaterialCubit(this._repo) : super(MaterialInitial());
 
   Future<void> loadMaterials({
@@ -45,6 +50,13 @@ class MaterialCubit extends Cubit<MaterialState> {
     int skip = 0,
     int limit = 20,
   }) async {
+    // Cập nhật lại bộ lọc hiện tại vào bộ nhớ của Cubit
+    _currentTypeId = typeId;
+    _currentSupplierId = supplierId;
+    _currentSearch = search;
+    _currentSkip = skip;
+    _currentLimit = limit;
+
     emit(MaterialLoading());
     try {
       final list = await _repo.getMaterials(
@@ -61,23 +73,22 @@ class MaterialCubit extends Cubit<MaterialState> {
     }
   }
 
-  Future<void> searchMaterials(
-    String keyword, {
-    int? typeId,
-    int? supplierId,
-  }) async {
-    // Chuyển việc xử lý sang hàm loadMaterials
+  // [MỚI] Hàm tiện ích để load lại đúng trang & bộ lọc đang hiển thị
+  Future<void> refreshCurrentState() async {
     await loadMaterials(
-      search: keyword,
-      typeId: typeId,
-      supplierId: supplierId,
+      typeId: _currentTypeId,
+      supplierId: _currentSupplierId,
+      search: _currentSearch,
+      skip: _currentSkip,
+      limit: _currentLimit,
     );
   }
 
   Future<void> addMaterial(MaterialItem material) async {
     try {
       await _repo.createMaterial(material);
-      loadMaterials();
+      // Thay vì loadMaterials() trống, ta gọi refreshCurrentState()
+      await refreshCurrentState();
     } catch (e) {
       emit(MaterialError(e.toString()));
     }
@@ -86,7 +97,7 @@ class MaterialCubit extends Cubit<MaterialState> {
   Future<void> updateMaterial(MaterialItem material) async {
     try {
       await _repo.updateMaterial(material);
-      loadMaterials();
+      await refreshCurrentState();
     } catch (e) {
       emit(MaterialError(e.toString()));
     }
@@ -95,7 +106,7 @@ class MaterialCubit extends Cubit<MaterialState> {
   Future<void> deleteMaterial(int id) async {
     try {
       await _repo.deleteMaterial(id);
-      loadMaterials();
+      await refreshCurrentState();
     } catch (e) {
       emit(MaterialError(e.toString()));
     }
@@ -112,14 +123,14 @@ class MaterialCubit extends Cubit<MaterialState> {
         supplierId: supplierId,
       );
 
-      // Bắn state thành công ra cho UI (UI sẽ dùng BlocListener để hiện dialog Save File)
+      // Bắn state thành công ra cho UI
       emit(MaterialExportSuccess(bytes: bytes, fileName: "Danh_Muc_NVL.xlsx"));
 
       // Phục hồi lại state hiển thị danh sách
       if (currentState is MaterialLoaded) {
         emit(currentState);
       } else {
-        loadMaterials(typeId: typeId, supplierId: supplierId);
+        await refreshCurrentState();
       }
     } catch (e) {
       emit(MaterialError(e.toString()));
