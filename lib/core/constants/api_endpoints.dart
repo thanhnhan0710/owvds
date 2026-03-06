@@ -1,6 +1,6 @@
 class ApiEndpoints {
   // [CẤU HÌNH GỐC] Chỉ cần sửa duy nhất dòng này khi đổi Server/IP
-  static const String serverDomain = 'http://192.168.0.175:8002';
+  static const String serverDomain = 'http://192.168.1.100:8002';
 
   // Base URL cho API (tự động nối thêm /api/v1)
   static const String baseUrl = '$serverDomain/api/v1';

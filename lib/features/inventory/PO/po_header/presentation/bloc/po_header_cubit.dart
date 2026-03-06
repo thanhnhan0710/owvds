@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:typed_data';
 import '../../data/po_header_repository.dart';
 import '../../domain/po_header_model.dart';
 
@@ -19,11 +20,18 @@ class POHeaderError extends POHeaderState {
   POHeaderError(this.message);
 }
 
+// [MỚI]: State thành công khi tải Excel xong
+class POHeaderExportSuccess extends POHeaderState {
+  final Uint8List bytes;
+  final String fileName;
+  POHeaderExportSuccess({required this.bytes, required this.fileName});
+}
+
 class POHeaderCubit extends Cubit<POHeaderState> {
   final POHeaderRepository _repo;
 
   int? _currentVendorId;
-  int? _currentStatusId; // [MỚI]: Lưu vết bộ lọc trạng thái
+  int? _currentStatusId;
   String? _currentSearch;
 
   POHeaderCubit(this._repo) : super(POHeaderInitial());
@@ -38,7 +46,6 @@ class POHeaderCubit extends Cubit<POHeaderState> {
     return await _repo.getNextPONumber();
   }
 
-  // [ĐÃ SỬA]: Thêm tham số statusId
   Future<void> loadPOs({int? vendorId, int? statusId, String? search}) async {
     _currentVendorId = vendorId;
     _currentStatusId = statusId;
@@ -70,7 +77,6 @@ class POHeaderCubit extends Cubit<POHeaderState> {
     );
   }
 
-  // [MỚI]: Hàm lọc riêng theo trạng thái
   Future<void> filterByStatus(int? statusId) async {
     await loadPOs(
       search: _currentSearch,
@@ -113,6 +119,30 @@ class POHeaderCubit extends Cubit<POHeaderState> {
     try {
       await _repo.deletePO(id);
       await refreshCurrent();
+    } catch (e) {
+      emit(POHeaderError(_parseError(e)));
+      await Future.delayed(const Duration(milliseconds: 100));
+      await refreshCurrent();
+    }
+  }
+
+  // --- [MỚI]: HÀM XUẤT EXCEL ---
+  Future<void> exportExcel() async {
+    try {
+      final currentState = state;
+      final bytes = await _repo.exportExcel(
+        vendorId: _currentVendorId,
+        statusId: _currentStatusId,
+        search: _currentSearch,
+      );
+
+      emit(POHeaderExportSuccess(bytes: bytes, fileName: "TheoDoiPO"));
+
+      if (currentState is POHeaderLoaded) {
+        emit(currentState);
+      } else {
+        await refreshCurrent();
+      }
     } catch (e) {
       emit(POHeaderError(_parseError(e)));
       await Future.delayed(const Duration(milliseconds: 100));

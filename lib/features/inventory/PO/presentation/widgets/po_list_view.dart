@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:owvds/features/inventory/PO/incoterm/presentation/bloc/incoterm_cubit.dart';
+import 'package:owvds/features/inventory/PO/po_header/domain/po_header_model.dart';
+import 'package:owvds/features/inventory/PO/po_header/presentation/bloc/po_header_cubit.dart';
+import 'package:owvds/features/inventory/PO/po_status/presentation/bloc/po_status_cubit.dart';
 
 import '../../../../../core/widgets/responsive_layout.dart';
 import '../../../../inventory/supplier/presentation/bloc/supplier_cubit.dart';
-import '../../incoterm/presentation/bloc/incoterm_cubit.dart';
-import '../../po_status/presentation/bloc/po_status_cubit.dart';
-import '../../po_header/domain/po_header_model.dart';
-import '../../po_header/presentation/bloc/po_header_cubit.dart';
 
 import 'po_detail_drawer.dart';
 
@@ -29,7 +29,9 @@ class POListView extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: SizedBox(
-              width: ResponsiveLayout.isMobile(context) ? double.infinity : 900,
+              width: ResponsiveLayout.isMobile(context)
+                  ? double.infinity
+                  : 1000,
               height: double.infinity,
               child: PODetailDrawer(po: po),
             ),
@@ -53,7 +55,9 @@ class POListView extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Xác nhận xóa"),
-        content: Text("Xóa Đơn hàng ${po.poNumber}? Sẽ xóa toàn bộ chi tiết."),
+        content: Text(
+          "Xóa Đơn hàng ${po.poNumber}? Sẽ xóa toàn bộ chi tiết vật tư bên trong.",
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -93,25 +97,23 @@ class POListView extends StatelessWidget {
           Expanded(
             child: BlocBuilder<POHeaderCubit, POHeaderState>(
               builder: (context, state) {
-                if (state is POHeaderLoading) {
+                if (state is POHeaderLoading)
                   return const Center(child: CircularProgressIndicator());
-                }
-                if (state is POHeaderError) {
+                if (state is POHeaderError)
                   return Center(
                     child: Text(
                       state.message,
                       style: const TextStyle(color: Colors.red),
                     ),
                   );
-                }
                 if (state is POHeaderLoaded) {
-                  if (state.pos.isEmpty) {
+                  if (state.pos.isEmpty)
                     return const Center(
                       child: Text(
                         "Không có Đơn mua hàng nào thỏa mãn điều kiện lọc.",
                       ),
                     );
-                  }
+
                   if (isMobile) return _buildMobileList(context, state.pos);
                   return _buildDesktopTable(context, state.pos);
                 }
@@ -119,8 +121,7 @@ class POListView extends StatelessWidget {
               },
             ),
           ),
-
-          // ── Pagination Footer ──────────────────────────────────────────────
+          // Pagination Footer
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
@@ -163,9 +164,6 @@ class POListView extends StatelessWidget {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // DESKTOP: DataTable (giữ nguyên)
-  // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildDesktopTable(
     BuildContext context,
     List<PurchaseOrderHeader> pos,
@@ -202,19 +200,13 @@ class POListView extends StatelessWidget {
             ),
             DataColumn(
               label: Text(
-                'Dự kiến ETA',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            DataColumn(
-              label: Text(
                 'Tổng tiền',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
             DataColumn(
               label: Text(
-                'Incoterm',
+                'Điều kiện',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
@@ -259,7 +251,10 @@ class POListView extends StatelessWidget {
                       }
                       return Text(
                         supName,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
                       );
                     },
                   ),
@@ -267,21 +262,86 @@ class POListView extends StatelessWidget {
                 DataCell(Text(po.orderDate ?? '-')),
                 DataCell(
                   Text(
-                    po.expectedArrivalDate ?? '-',
-                    style: const TextStyle(
-                      color: Colors.deepOrange,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                DataCell(
-                  Text(
-                    "${numFormat.format(po.totalAmount)} ₫",
+                    "${numFormat.format(po.totalAmount)} \$",
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
-                DataCell(_buildIncotermBadge(po.incotermId)),
-                DataCell(_buildStatusBadge(po.statusId)),
+                DataCell(
+                  BlocBuilder<IncotermCubit, IncotermState>(
+                    builder: (ctx, state) {
+                      if (po.incotermId == null) return const Text("-");
+                      String code = "?";
+                      if (state is IncotermLoaded) {
+                        final inc = state.incoterms
+                            .where((i) => i.incotermId == po.incotermId)
+                            .firstOrNull;
+                        if (inc != null) code = inc.incotermCode;
+                      }
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          code,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                DataCell(
+                  BlocBuilder<POStatusCubit, POStatusState>(
+                    builder: (ctx, state) {
+                      if (po.statusId == null) return const Text("-");
+                      String statusName = "?";
+                      if (state is POStatusLoaded) {
+                        final s = state.statuses
+                            .where((i) => i.statusId == po.statusId)
+                            .firstOrNull;
+                        if (s != null) statusName = s.statusCode;
+                      }
+                      // Fake colors based on common status keywords
+                      Color bgColor = Colors.blue.shade50;
+                      Color txtColor = Colors.blue.shade700;
+                      if (statusName.toLowerCase().contains("completed")) {
+                        bgColor = Colors.green.shade50;
+                        txtColor = Colors.green.shade700;
+                      } else if (statusName.toLowerCase().contains("partial")) {
+                        bgColor = Colors.orange.shade50;
+                        txtColor = Colors.orange.shade700;
+                      }
+
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: bgColor,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          statusName,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: txtColor,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
                 DataCell(
                   Row(
                     children: [
@@ -312,40 +372,25 @@ class POListView extends StatelessWidget {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // MOBILE: Card đầy đủ thông tin — tương đương desktop table
-  // ═══════════════════════════════════════════════════════════════════════════
   Widget _buildMobileList(BuildContext context, List<PurchaseOrderHeader> pos) {
-    final numFormat = NumberFormat("#,##0", "en_US");
-
     return ListView.separated(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       itemCount: pos.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final po = pos[index];
-
         return InkWell(
           onTap: () => _openEditDrawer(context, po),
-          borderRadius: BorderRadius.circular(12),
           child: Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey.shade200),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.shade100,
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Row 1: Số PO + Tổng tiền ────────────────────────────
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -358,98 +403,27 @@ class POListView extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      "${numFormat.format(po.totalAmount)} ₫",
+                      "${NumberFormat("#,##0.##", "en_US").format(po.totalAmount)} \$",
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.green,
-                        fontSize: 15,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                const Divider(height: 1),
-                const SizedBox(height: 10),
-
-                // ── Row 2: Nhà cung cấp ─────────────────────────────────
-                BlocBuilder<SupplierCubit, SupplierState>(
-                  builder: (ctx, state) {
-                    String supName = "...";
-                    if (state is SupplierLoaded) {
-                      final sup = state.suppliers
-                          .where((s) => s.supplierId == po.vendorId)
-                          .firstOrNull;
-                      if (sup != null)
-                        supName = sup.shortName ?? sup.supplierName;
-                    }
-                    return _infoRow(
-                      icon: Icons.business,
-                      iconColor: _primaryColor,
-                      label: "Nhà cung cấp",
-                      value: supName,
-                      valueBold: true,
-                    );
-                  },
-                ),
-                const SizedBox(height: 6),
-
-                // ── Row 3: Ngày đặt + ETA ──────────────────────────────
+                const SizedBox(height: 8),
+                Text("Ngày đặt: ${po.orderDate ?? '-'}"),
+                const SizedBox(height: 8),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Expanded(
-                      child: _infoRow(
-                        icon: Icons.calendar_today,
-                        iconColor: Colors.grey,
-                        label: "Ngày đặt",
-                        value: po.orderDate ?? '-',
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _infoRow(
-                        icon: Icons.local_shipping_outlined,
-                        iconColor: Colors.deepOrange,
-                        label: "Dự kiến ETA",
-                        value: po.expectedArrivalDate ?? '-',
-                        valueColor: Colors.deepOrange,
-                        valueBold: true,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-
-                // ── Row 4: Incoterm + Trạng thái ──────────────────────
-                Row(
-                  children: [
-                    _buildIncotermBadge(po.incotermId),
-                    const SizedBox(width: 8),
-                    _buildStatusBadge(po.statusId),
-                    const Spacer(),
-
-                    // Hành động
                     IconButton(
                       icon: const Icon(
-                        Icons.remove_red_eye,
-                        color: Colors.blue,
-                        size: 20,
-                      ),
-                      tooltip: "Xem / Sửa",
-                      onPressed: () => _openEditDrawer(context, po),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                    const SizedBox(width: 12),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.delete_outline,
+                        Icons.delete,
                         color: Colors.red,
-                        size: 20,
+                        size: 18,
                       ),
-                      tooltip: "Xóa",
                       onPressed: () => _confirmDelete(context, po),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
                     ),
                   ],
                 ),
@@ -458,107 +432,6 @@ class POListView extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  // ─── Shared badge builders ────────────────────────────────────────────────
-
-  Widget _buildIncotermBadge(int? incotermId) {
-    if (incotermId == null) {
-      return const SizedBox.shrink();
-    }
-    return BlocBuilder<IncotermCubit, IncotermState>(
-      builder: (ctx, state) {
-        String code = "?";
-        if (state is IncotermLoaded) {
-          final inc = state.incoterms
-              .where((i) => i.incotermId == incotermId)
-              .firstOrNull;
-          if (inc != null) code = inc.incotermCode;
-        }
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            code,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildStatusBadge(int? statusId) {
-    if (statusId == null) {
-      return const SizedBox.shrink();
-    }
-    return BlocBuilder<POStatusCubit, POStatusState>(
-      builder: (ctx, state) {
-        String statusName = "?";
-        if (state is POStatusLoaded) {
-          final s = state.statuses
-              .where((i) => i.statusId == statusId)
-              .firstOrNull;
-          if (s != null) statusName = s.statusCode;
-        }
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.blue.shade50,
-            border: Border.all(color: Colors.blue.shade200),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            statusName,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue.shade700,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // ─── Helper: 1 dòng info với icon + label + value ────────────────────────
-  Widget _infoRow({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-    required String value,
-    Color? valueColor,
-    bool valueBold = false,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(icon, size: 14, color: iconColor),
-        const SizedBox(width: 5),
-        Text(
-          "$label: ",
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        Flexible(
-          child: Text(
-            value,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 13,
-              color: valueColor ?? Colors.black87,
-              fontWeight: valueBold ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

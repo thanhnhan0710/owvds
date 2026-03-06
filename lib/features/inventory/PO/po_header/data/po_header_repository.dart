@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'dart:typed_data';
 import '../../../../../core/network/api_client.dart';
 import '../domain/po_header_model.dart';
 
@@ -14,7 +15,6 @@ class POHeaderRepository {
     }
   }
 
-  // [ĐÃ SỬA]: Thêm tham số statusId
   Future<int> getPOCount({int? vendorId, int? statusId, String? search}) async {
     try {
       final queryParams = <String, dynamic>{};
@@ -32,7 +32,6 @@ class POHeaderRepository {
     }
   }
 
-  // [ĐÃ SỬA]: Thêm tham số statusId
   Future<List<PurchaseOrderHeader>> getPOs({
     int skip = 0,
     int limit = 200,
@@ -94,6 +93,30 @@ class POHeaderRepository {
       await _dio.delete('/api/v1/purchase-orders/$id');
     } catch (e) {
       throw Exception(e);
+    }
+  }
+
+  // --- [MỚI]: GỌI API XUẤT EXCEL TỪ BACKEND ---
+  Future<Uint8List> exportExcel({
+    int? vendorId,
+    int? statusId,
+    String? search,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (vendorId != null) queryParams['vendor_id'] = vendorId;
+      if (statusId != null) queryParams['status_id'] = statusId;
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+
+      final response = await _dio.get<List<int>>(
+        '/api/v1/purchase-orders/export',
+        queryParameters: queryParams,
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      return Uint8List.fromList(response.data!);
+    } catch (e) {
+      throw Exception("Lỗi xuất Excel: $e");
     }
   }
 }
