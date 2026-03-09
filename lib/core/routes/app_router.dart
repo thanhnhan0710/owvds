@@ -9,6 +9,8 @@ import 'package:owvds/features/hr/organization/screens/organization_screen.dart'
 import 'package:owvds/features/hr/work_schedule/presentation/screens/work_schedule_screen.dart';
 import 'package:owvds/features/inventory/PO/presentation/screens/purchase_management_screen.dart';
 import 'package:owvds/features/inventory/material/presentation/screens/material_management_screen.dart';
+import 'package:owvds/features/inventory/material_inventory/presentation/screens/material_inventory_screen.dart';
+import 'package:owvds/features/inventory/material_receipt/presentation/screens/material_receipt_screen.dart';
 import 'package:owvds/features/inventory/share/presentation/screens/warehouse_dashboard_screen.dart';
 import 'package:owvds/features/inventory/supplier/presentation/screens/supplier_management_screen.dart';
 import 'package:owvds/features/production/loom_state/presentation/screens/semi_finished_screen.dart';
@@ -87,7 +89,17 @@ class AppRouter {
         ),
         GoRoute(
           path: '/purchase-orders',
-          builder: (context, state) => const POManagementScreen(),
+          builder: (context, state) => const PurchaseManagementScreen(),
+        ),
+        // Gắn liên kết Tồn Kho NVL
+        GoRoute(
+          path: '/inventorys',
+          builder: (context, state) => const MaterialInventoryScreen(),
+        ),
+        // Gắn liên kết Nhập Kho NVL
+        GoRoute(
+          path: '/stock-in',
+          builder: (context, state) => const MaterialReceiptScreen(),
         ),
 
         // PRODUCTION

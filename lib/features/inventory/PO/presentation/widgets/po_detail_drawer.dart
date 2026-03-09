@@ -2,19 +2,18 @@ import 'package:flutter/material.dart' hide MaterialState;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:intl/intl.dart';
-import 'package:owvds/features/inventory/PO/incoterm/domain/incoterm_model.dart';
-import 'package:owvds/features/inventory/PO/incoterm/presentation/bloc/incoterm_cubit.dart';
-import 'package:owvds/features/inventory/PO/po_header/domain/po_header_model.dart';
-import 'package:owvds/features/inventory/PO/po_header/presentation/bloc/po_header_cubit.dart';
-import 'package:owvds/features/inventory/PO/po_status/domain/po_status_model.dart';
-import 'package:owvds/features/inventory/PO/po_status/presentation/bloc/po_status_cubit.dart';
 
 import '../../../../../core/widgets/responsive_layout.dart';
-
+import '../../incoterm/presentation/bloc/incoterm_cubit.dart';
+import '../../incoterm/domain/incoterm_model.dart';
+import '../../po_status/presentation/bloc/po_status_cubit.dart';
+import '../../po_status/domain/po_status_model.dart';
 import '../../../../inventory/supplier/presentation/bloc/supplier_cubit.dart';
 import '../../../../inventory/supplier/domain/supplier_model.dart';
 import '../../../../inventory/material/presentation/bloc/material_cubit.dart';
 
+import '../../po_header/domain/po_header_model.dart';
+import '../../po_header/presentation/bloc/po_header_cubit.dart';
 import '../../po_detail/domain/po_detail_model.dart';
 
 // Import bảng table nhập liệu động
@@ -71,6 +70,8 @@ class _PODetailDrawerState extends State<PODetailDrawer> {
             atd: d.atd,
             bookingDate: d.bookingDate,
             backendRolls: d.quantityRolls,
+            receivedQuantity: d.receivedQuantity,
+            receivedRolls: d.receivedRolls,
           ),
         );
       }
@@ -174,14 +175,15 @@ class _PODetailDrawerState extends State<PODetailDrawer> {
 
   @override
   Widget build(BuildContext context) {
-    // Lấy trạng thái màn hình để responsive form
     final isMobile = ResponsiveLayout.isMobile(context);
 
     return Container(
       color: Colors.white,
       child: Column(
         children: [
-          // DRAWER HEADER (ĐÃ SỬA LỖI OVERFLOW)
+          // ==========================================
+          // DRAWER HEADER (ĐÃ FIX OVERFLOW)
+          // ==========================================
           Container(
             padding: EdgeInsets.symmetric(
               horizontal: isMobile ? 16 : 24,
@@ -267,7 +269,9 @@ class _PODetailDrawerState extends State<PODetailDrawer> {
             ),
           ),
 
+          // ==========================================
           // DRAWER BODY
+          // ==========================================
           Expanded(
             child: Form(
               key: _formKey,
@@ -337,7 +341,7 @@ class _PODetailDrawerState extends State<PODetailDrawer> {
                                 ),
                           const SizedBox(height: 16),
 
-                          // Hàng 2 (ĐÃ SỬA isExpanded: true ĐỂ CHỐNG TRÀN)
+                          // Hàng 2
                           isMobile
                               ? Column(
                                   children: [
@@ -422,7 +426,9 @@ class _PODetailDrawerState extends State<PODetailDrawer> {
     );
   }
 
-  // CÁC WIDGETS TÁCH RỜI ĐỂ DỄ ĐỌC CODE
+  // ==========================================
+  // CÁC WIDGETS TÁCH RỜI (ĐÃ SỬA LỖI OVERFLOW)
+  // ==========================================
   Widget _buildSupplierDropdown() {
     return BlocBuilder<SupplierCubit, SupplierState>(
       builder: (context, state) {
@@ -466,14 +472,18 @@ class _PODetailDrawerState extends State<PODetailDrawer> {
       builder: (ctx, state) {
         List<Incoterm> list = (state is IncotermLoaded) ? state.incoterms : [];
         return DropdownButtonFormField<int>(
-          isExpanded: true, // [SỬA LỖI TRÀN]
+          isExpanded: true, // [QUAN TRỌNG]: Ngăn lỗi tràn chiều ngang
           value: _selectedIncotermId,
           decoration: _inputDeco("Điều kiện Incoterm"),
           items: list
               .map(
                 (i) => DropdownMenuItem(
                   value: i.incotermId,
-                  child: Text(i.incotermCode, overflow: TextOverflow.ellipsis),
+                  child: Text(
+                    i.incotermCode,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ), // [QUAN TRỌNG]: Tránh text quá dài phá vỡ cấu trúc Row
                 ),
               )
               .toList(),
@@ -488,14 +498,18 @@ class _PODetailDrawerState extends State<PODetailDrawer> {
       builder: (ctx, state) {
         List<POStatus> list = (state is POStatusLoaded) ? state.statuses : [];
         return DropdownButtonFormField<int>(
-          isExpanded: true, // [SỬA LỖI TRÀN]
+          isExpanded: true, // [QUAN TRỌNG]: Ngăn lỗi tràn chiều ngang
           value: _selectedStatusId,
           decoration: _inputDeco("Trạng thái"),
           items: list
               .map(
                 (i) => DropdownMenuItem(
                   value: i.statusId,
-                  child: Text(i.statusCode, overflow: TextOverflow.ellipsis),
+                  child: Text(
+                    i.statusCode,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ), // [QUAN TRỌNG]: Tránh text quá dài phá vỡ cấu trúc Row
                 ),
               )
               .toList(),
@@ -505,12 +519,13 @@ class _PODetailDrawerState extends State<PODetailDrawer> {
     );
   }
 
+  // [ĐÃ SỬA LỖI OVERFLOW]: Giảm contentPadding chiều ngang từ 16 xuống 12 để tiết kiệm diện tích cho nút mũi tên của Dropdown
   InputDecoration _inputDeco(String label) => InputDecoration(
     labelText: label,
     filled: true,
     fillColor: Colors.white,
     isDense: true,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(8),
       borderSide: BorderSide(color: Colors.grey.shade300),

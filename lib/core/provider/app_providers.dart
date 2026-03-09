@@ -22,12 +22,20 @@ import 'package:owvds/features/inventory/PO/po_status/data/po_status_repository.
 import 'package:owvds/features/inventory/PO/po_status/presentation/bloc/po_status_cubit.dart';
 import 'package:owvds/features/inventory/material/data/material_repository.dart';
 import 'package:owvds/features/inventory/material/presentation/bloc/material_cubit.dart';
+import 'package:owvds/features/inventory/material_batch/data/material_batch_repository.dart';
+import 'package:owvds/features/inventory/material_batch/presentation/bloc/material_batch_cubit.dart';
+import 'package:owvds/features/inventory/material_inventory/data/material_inventory_repository.dart';
+import 'package:owvds/features/inventory/material_inventory/presentation/bloc/material_inventory_cubit.dart';
+import 'package:owvds/features/inventory/material_receipt/data/material_receipt_repository.dart';
+import 'package:owvds/features/inventory/material_receipt/presentation/bloc/material_receipt_cubit.dart';
 import 'package:owvds/features/inventory/material_type/data/material_type_repository.dart';
 import 'package:owvds/features/inventory/material_type/presentation/bloc/material_type_cubit.dart';
 import 'package:owvds/features/inventory/supplier/data/supplier_repository.dart';
 import 'package:owvds/features/inventory/supplier/presentation/bloc/supplier_cubit.dart';
 import 'package:owvds/features/inventory/supplier_category/data/supplier_category_repository.dart';
 import 'package:owvds/features/inventory/supplier_category/presentation/bloc/supplier_category_cubit.dart';
+import 'package:owvds/features/inventory/warehouse/data/warehouse_repository.dart';
+import 'package:owvds/features/inventory/warehouse/presentation/bloc/warehouse_cubit.dart';
 import 'package:owvds/features/production/loom_state/product/data/product_repository.dart';
 import 'package:owvds/features/production/loom_state/product/presentation/bloc/product_cubit.dart';
 import 'package:owvds/features/production/loom_state/product_type/data/product_type_repository.dart';
@@ -93,6 +101,22 @@ class AppProviders {
     ),
     BlocProvider<PODetailCubit>(
       create: (context) => PODetailCubit(PODetailRepository()),
+    ),
+    BlocProvider<MaterialReceiptCubit>(
+      create: (context) => MaterialReceiptCubit(MaterialReceiptRepository()),
+    ),
+
+    BlocProvider<MaterialInventoryCubit>(
+      create: (context) =>
+          MaterialInventoryCubit(MaterialInventoryRepository()),
+    ),
+
+    BlocProvider<MaterialBatchCubit>(
+      create: (context) => MaterialBatchCubit(MaterialBatchRepository()),
+    ),
+
+    BlocProvider<WarehouseCubit>(
+      create: (context) => WarehouseCubit(WarehouseRepository()),
     ),
 
     // 4. Production Providers

@@ -9,11 +9,19 @@ import '../../../../inventory/material/domain/material_model.dart';
 class LocalPODetail {
   int? materialId;
 
-  // Tài chính
+  // Tài chính & Khối lượng đặt
   String currency;
   double qtyKg;
   double price;
   int backendRolls;
+
+  // Thông tin đối soát Nhập kho
+  double receivedQuantity;
+  int receivedRolls;
+
+  // Tự động tính toán số lượng còn lại (Kg)
+  double get remainingQuantity =>
+      (qtyKg - receivedQuantity) > 0 ? (qtyKg - receivedQuantity) : 0;
 
   // Logistics
   double? oceanFreight;
@@ -32,6 +40,8 @@ class LocalPODetail {
     this.qtyKg = 0,
     this.price = 0,
     this.backendRolls = 0,
+    this.receivedQuantity = 0,
+    this.receivedRolls = 0,
     this.oceanFreight,
     this.confirmDelivery,
     this.goodsReadiness,
@@ -45,13 +55,15 @@ class LocalPODetail {
 
   double get lineTotal => qtyKg * price;
 
-  // [MỚI]: Thêm toJson để lưu nháp
+  // JSON Methods cho tính năng Auto-Save
   Map<String, dynamic> toJson() => {
     'materialId': materialId,
     'currency': currency,
     'qtyKg': qtyKg,
     'price': price,
     'backendRolls': backendRolls,
+    'receivedQuantity': receivedQuantity,
+    'receivedRolls': receivedRolls,
     'oceanFreight': oceanFreight,
     'confirmDelivery': confirmDelivery,
     'goodsReadiness': goodsReadiness,
@@ -63,13 +75,14 @@ class LocalPODetail {
     'bookingDate': bookingDate,
   };
 
-  // [MỚI]: Thêm fromJson để đọc nháp
   factory LocalPODetail.fromJson(Map<String, dynamic> json) => LocalPODetail(
     materialId: json['materialId'],
     currency: json['currency'] ?? "USD",
     qtyKg: (json['qtyKg'] ?? 0).toDouble(),
     price: (json['price'] ?? 0).toDouble(),
     backendRolls: json['backendRolls'] ?? 0,
+    receivedQuantity: (json['receivedQuantity'] ?? 0).toDouble(),
+    receivedRolls: json['receivedRolls'] ?? 0,
     oceanFreight: json['oceanFreight'] != null
         ? (json['oceanFreight'] as num).toDouble()
         : null,
@@ -128,11 +141,11 @@ class _PODetailTableState extends State<PODetailTable> {
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          // [ĐÃ SỬA]: Bọc toàn bộ Header và Body vào một SingleChildScrollView Horizontal duy nhất
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 1600),
+              // [ĐÃ SỬA]: Tăng minWidth để đảm bảo bao phủ đủ tổng chiều rộng cột + khoảng cách
+              constraints: const BoxConstraints(minWidth: 2250),
               child: Column(
                 children: [
                   // --- 1. HEADER CỦA BẢNG ---
@@ -144,68 +157,121 @@ class _PODetailTableState extends State<PODetailTable> {
                     ),
                     child: Row(
                       children: [
+                        // [ĐÃ SỬA LỖI LỆCH PHA]: Thêm các SizedBox(width: 8) tương ứng với các dòng Data bên dưới
                         _buildHeaderCell(
                           "Mã Vật Tư",
                           200,
                           color: Colors.black87,
                         ),
+                        const SizedBox(width: 8),
+
                         _buildHeaderCell(
-                          "Khối lượng (Kg)",
-                          100,
+                          "Đặt (Kg)",
+                          90,
                           align: TextAlign.right,
                           color: Colors.black87,
                         ),
+                        const SizedBox(width: 8),
+
                         _buildHeaderCell(
-                          "Cuộn",
+                          "Đặt (c)",
                           70,
                           align: TextAlign.right,
                           color: Colors.black87,
                         ),
+                        const SizedBox(width: 8),
+
+                        _buildHeaderCell(
+                          "Nhận (Kg)",
+                          90,
+                          align: TextAlign.right,
+                          color: Colors.purple.shade700,
+                        ),
+                        const SizedBox(width: 8),
+
+                        _buildHeaderCell(
+                          "Nhận (c)",
+                          70,
+                          align: TextAlign.right,
+                          color: Colors.purple.shade700,
+                        ),
+                        const SizedBox(width: 8),
+
+                        _buildHeaderCell(
+                          "Còn (Kg)",
+                          90,
+                          align: TextAlign.right,
+                          color: Colors.green.shade700,
+                        ),
+                        const SizedBox(width: 8),
+
+                        _buildHeaderCell(
+                          "Còn (c)",
+                          70,
+                          align: TextAlign.right,
+                          color: Colors.green.shade700,
+                        ),
+                        const SizedBox(width: 8),
+
                         _buildHeaderCell(
                           "Tiền tệ",
                           80,
                           align: TextAlign.center,
                           color: Colors.black87,
                         ),
+                        const SizedBox(width: 8),
+
                         _buildHeaderCell(
                           "Đơn giá",
-                          100,
+                          90,
                           align: TextAlign.right,
                           color: Colors.black87,
                         ),
+                        const SizedBox(width: 8),
+
                         _buildHeaderCell(
                           "Thành tiền",
-                          120,
+                          110,
                           align: TextAlign.right,
                           color: Colors.black87,
                         ),
+                        const SizedBox(width: 8),
 
                         _buildHeaderCell(
                           "Conf. Delivery",
                           100,
                           color: Colors.blue.shade700,
                         ),
+                        const SizedBox(width: 8),
+
                         _buildHeaderCell(
                           "Readiness",
                           100,
                           color: Colors.blue.shade700,
                         ),
+                        const SizedBox(width: 8),
+
                         _buildHeaderCell(
                           "Ship Line",
                           100,
                           color: Colors.blue.shade700,
                         ),
+                        const SizedBox(width: 8),
+
                         _buildHeaderCell(
                           "FWD",
                           100,
                           color: Colors.blue.shade700,
                         ),
+                        const SizedBox(width: 8),
+
                         _buildHeaderCell(
                           "O/F (\$)",
                           80,
                           align: TextAlign.right,
                           color: Colors.blue.shade700,
                         ),
+                        const SizedBox(width: 8),
 
                         _buildHeaderCell(
                           "Booking Date",
@@ -213,24 +279,31 @@ class _PODetailTableState extends State<PODetailTable> {
                           align: TextAlign.center,
                           color: Colors.orange.shade800,
                         ),
+                        const SizedBox(width: 8),
+
                         _buildHeaderCell(
                           "ETD",
                           120,
                           align: TextAlign.center,
                           color: Colors.orange.shade800,
                         ),
+                        const SizedBox(width: 8),
+
                         _buildHeaderCell(
                           "ETA",
                           120,
                           align: TextAlign.center,
                           color: Colors.orange.shade800,
                         ),
+                        const SizedBox(width: 8),
+
                         _buildHeaderCell(
                           "ATD",
                           120,
                           align: TextAlign.center,
                           color: Colors.orange.shade800,
                         ),
+                        const SizedBox(width: 8),
 
                         const SizedBox(width: 40),
                       ],
@@ -262,6 +335,7 @@ class _PODetailTableState extends State<PODetailTable> {
                       ),
                       child: Row(
                         children: [
+                          // 1. Mã vật tư
                           SizedBox(
                             width: 200,
                             child: BlocBuilder<MaterialCubit, MaterialState>(
@@ -309,7 +383,7 @@ class _PODetailTableState extends State<PODetailTable> {
                                         .toList();
                                   },
                                   itemAsString: (MaterialItem m) =>
-                                      "[${m.materialCode}] ${m.materialName}",
+                                      "[${m.materialCode}]",
                                   compareFn:
                                       (
                                         MaterialItem item1,
@@ -342,8 +416,9 @@ class _PODetailTableState extends State<PODetailTable> {
                           ),
                           const SizedBox(width: 8),
 
+                          // 2. Số lượng Đặt (Kg)
                           SizedBox(
-                            width: 100,
+                            width: 90,
                             child: TextFormField(
                               initialValue: item.qtyKg == 0
                                   ? ''
@@ -360,49 +435,199 @@ class _PODetailTableState extends State<PODetailTable> {
                           ),
                           const SizedBox(width: 8),
 
-                          SizedBox(
-                            width: 70,
-                            child: BlocBuilder<MaterialCubit, MaterialState>(
-                              builder: (context, matState) {
-                                int displayRolls = item.backendRolls;
-                                if (matState is MaterialLoaded &&
-                                    item.materialId != null) {
-                                  final mat = matState.materials
-                                      .where(
-                                        (m) => m.materialId == item.materialId,
-                                      )
-                                      .firstOrNull;
-                                  if (mat != null &&
-                                      mat.kgPerBobbin != null &&
-                                      mat.kgPerBobbin! > 0) {
-                                    displayRolls =
-                                        (item.qtyKg / mat.kgPerBobbin!).ceil();
-                                  }
+                          // --- NHÓM TÍNH TOÁN (Cuộn, Đã nhận, Còn lại) BỌC TRONG BLOC ĐỂ TÍNH TOÁN ĐỒNG BỘ ---
+                          BlocBuilder<MaterialCubit, MaterialState>(
+                            builder: (context, matState) {
+                              // Tính số cuộn đặt ban đầu
+                              int displayRolls = item.backendRolls;
+                              if (matState is MaterialLoaded &&
+                                  item.materialId != null) {
+                                final mat = matState.materials
+                                    .where(
+                                      (m) => m.materialId == item.materialId,
+                                    )
+                                    .firstOrNull;
+                                if (mat != null &&
+                                    mat.kgPerBobbin != null &&
+                                    mat.kgPerBobbin! > 0) {
+                                  displayRolls = (item.qtyKg / mat.kgPerBobbin!)
+                                      .ceil();
                                 }
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8,
-                                    horizontal: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.teal.shade50,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    "$displayRolls",
-                                    textAlign: TextAlign.right,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.teal.shade700,
-                                      fontSize: 13,
+                              }
+
+                              // Tính số cuộn còn lại
+                              int remainingRolls =
+                                  displayRolls - item.receivedRolls;
+                              if (remainingRolls < 0) remainingRolls = 0;
+
+                              return Row(
+                                children: [
+                                  // 3. Đặt (Cuộn)
+                                  SizedBox(
+                                    width: 70,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                        horizontal: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.teal.shade50,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        "$displayRolls",
+                                        textAlign: TextAlign.right,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.teal.shade700,
+                                          fontSize: 13,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                );
-                              },
-                            ),
+                                  const SizedBox(width: 8),
+
+                                  // 4. Đã nhận (Kg)
+                                  SizedBox(
+                                    width: 90,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                        horizontal: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.purple.shade50,
+                                        border: Border.all(
+                                          color: Colors.purple.shade100,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        numFmt.format(item.receivedQuantity),
+                                        textAlign: TextAlign.right,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.purple.shade700,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+
+                                  // 5. Đã nhận (Cuộn)
+                                  SizedBox(
+                                    width: 70,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                        horizontal: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.purple.shade50,
+                                        border: Border.all(
+                                          color: Colors.purple.shade100,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        numFmt.format(item.receivedRolls),
+                                        textAlign: TextAlign.right,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.purple.shade700,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+
+                                  // 6. Còn lại (Kg)
+                                  SizedBox(
+                                    width: 90,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                        horizontal: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            item.remainingQuantity == 0 &&
+                                                item.qtyKg > 0
+                                            ? Colors.green.shade50
+                                            : Colors.orange.shade50,
+                                        border: Border.all(
+                                          color:
+                                              item.remainingQuantity == 0 &&
+                                                  item.qtyKg > 0
+                                              ? Colors.green.shade200
+                                              : Colors.orange.shade200,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        numFmt.format(item.remainingQuantity),
+                                        textAlign: TextAlign.right,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color:
+                                              item.remainingQuantity == 0 &&
+                                                  item.qtyKg > 0
+                                              ? Colors.green.shade700
+                                              : Colors.orange.shade800,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+
+                                  // 7. Còn lại (Cuộn)
+                                  SizedBox(
+                                    width: 70,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                        horizontal: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            item.remainingQuantity == 0 &&
+                                                item.qtyKg > 0
+                                            ? Colors.green.shade50
+                                            : Colors.orange.shade50,
+                                        border: Border.all(
+                                          color:
+                                              item.remainingQuantity == 0 &&
+                                                  item.qtyKg > 0
+                                              ? Colors.green.shade200
+                                              : Colors.orange.shade200,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        numFmt.format(remainingRolls),
+                                        textAlign: TextAlign.right,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color:
+                                              item.remainingQuantity == 0 &&
+                                                  item.qtyKg > 0
+                                              ? Colors.green.shade700
+                                              : Colors.orange.shade800,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                           const SizedBox(width: 8),
 
+                          // Tiền tệ
                           SizedBox(
                             width: 80,
                             child: DropdownButtonFormField<String>(
@@ -427,8 +652,9 @@ class _PODetailTableState extends State<PODetailTable> {
                           ),
                           const SizedBox(width: 8),
 
+                          // Giá
                           SizedBox(
-                            width: 100,
+                            width: 90,
                             child: TextFormField(
                               initialValue: item.price == 0
                                   ? ''
@@ -445,8 +671,9 @@ class _PODetailTableState extends State<PODetailTable> {
                           ),
                           const SizedBox(width: 8),
 
+                          // Thành tiền
                           SizedBox(
-                            width: 120,
+                            width: 110,
                             child: Container(
                               alignment: Alignment.centerRight,
                               padding: const EdgeInsets.only(right: 8),
@@ -461,6 +688,7 @@ class _PODetailTableState extends State<PODetailTable> {
                           ),
                           const SizedBox(width: 8),
 
+                          // Logistics
                           SizedBox(
                             width: 100,
                             child: TextFormField(
@@ -520,6 +748,7 @@ class _PODetailTableState extends State<PODetailTable> {
                           ),
                           const SizedBox(width: 8),
 
+                          // Ngày tháng
                           SizedBox(
                             width: 120,
                             child: InkWell(
@@ -591,6 +820,7 @@ class _PODetailTableState extends State<PODetailTable> {
                             ),
                           ),
 
+                          const SizedBox(width: 8),
                           SizedBox(
                             width: 40,
                             child: IconButton(
