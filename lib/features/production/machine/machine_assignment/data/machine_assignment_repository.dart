@@ -9,31 +9,43 @@ class MachineAssignmentRepository {
   // 1. Gán sản phẩm mới cho máy
   Future<MachineProductHistory> assignProduct(
     int machineId,
-    int productId, {
+    int productId,
+    int lineNumber, {
     String? notes,
   }) async {
     final response = await _dio.post(
       '/api/v1/machine-assignments/$machineId/assign',
-      data: {'product_id': productId, 'notes': notes},
+      data: {
+        'product_id': productId,
+        'line_number': lineNumber,
+        'notes': notes,
+      },
     );
     return MachineProductHistory.fromJson(response.data);
   }
 
   // 2. Dừng sản phẩm hiện tại
-  Future<void> stopProduct(int machineId) async {
-    await _dio.post('/api/v1/machine-assignments/$machineId/stop');
+  Future<void> stopProduct(int machineId, int lineNumber) async {
+    await _dio.post(
+      '/api/v1/machine-assignments/$machineId/stop',
+      queryParameters: {'line_number': lineNumber},
+    );
   }
 
   // 3. Lấy sản phẩm đang chạy hiện tại
-  Future<MachineProductHistory?> getCurrentProduct(int machineId) async {
+  Future<List<MachineProductHistory>> getCurrentProductLines(
+    int machineId,
+  ) async {
     try {
       final response = await _dio.get(
         '/api/v1/machine-assignments/$machineId/current',
       );
-      return MachineProductHistory.fromJson(response.data);
+      return (response.data as List)
+          .map((e) => MachineProductHistory.fromJson(e))
+          .toList();
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {
-        return null; // Máy đang trống
+        return [];
       }
       rethrow;
     }
@@ -49,7 +61,7 @@ class MachineAssignmentRepository {
         .toList();
   }
 
-  // 5. Lấy lịch sử chạy máy của 1 máy (Đã thêm lọc ngày)
+  // 5. Lấy lịch sử chạy máy của 1 máy (ĐÃ FIX LỖI 422: Loại bỏ tham số null)
   Future<List<MachineProductHistory>> getHistory(
     int machineId, {
     int skip = 0,
@@ -57,21 +69,23 @@ class MachineAssignmentRepository {
     String? startDate,
     String? endDate,
   }) async {
+    final queryParams = <String, dynamic>{'skip': skip, 'limit': limit};
+
+    if (startDate != null && startDate.isNotEmpty)
+      queryParams['start_date'] = startDate;
+    if (endDate != null && endDate.isNotEmpty)
+      queryParams['end_date'] = endDate;
+
     final response = await _dio.get(
       '/api/v1/machine-assignments/$machineId/history',
-      queryParameters: {
-        'skip': skip,
-        'limit': limit,
-        'start_date': ?startDate,
-        'end_date': ?endDate,
-      },
+      queryParameters: queryParams,
     );
     return (response.data as List)
         .map((e) => MachineProductHistory.fromJson(e))
         .toList();
   }
 
-  // 6. Lấy lịch sử toàn cục (Đã thêm lọc ngày và keyword)
+  // 6. Lấy lịch sử toàn cục (ĐÃ FIX LỖI 422)
   Future<List<MachineProductHistory>> getGlobalHistory({
     String? keyword,
     int skip = 0,
@@ -79,15 +93,17 @@ class MachineAssignmentRepository {
     String? startDate,
     String? endDate,
   }) async {
+    final queryParams = <String, dynamic>{'skip': skip, 'limit': limit};
+
+    if (keyword != null && keyword.isNotEmpty) queryParams['keyword'] = keyword;
+    if (startDate != null && startDate.isNotEmpty)
+      queryParams['start_date'] = startDate;
+    if (endDate != null && endDate.isNotEmpty)
+      queryParams['end_date'] = endDate;
+
     final response = await _dio.get(
       '/api/v1/machine-assignments/history/all/global',
-      queryParameters: {
-        'keyword': keyword,
-        'skip': skip,
-        'limit': limit,
-        'start_date': ?startDate,
-        'end_date': ?endDate,
-      },
+      queryParameters: queryParams,
     );
     return (response.data as List)
         .map((e) => MachineProductHistory.fromJson(e))
@@ -124,33 +140,44 @@ class MachineAssignmentRepository {
     await _dio.delete('/api/v1/machine-assignments/history/$historyId');
   }
 
-  // 10. Xuất Excel toàn cục
+  // 10. Xuất Excel toàn cục (ĐÃ FIX LỖI 422)
   Future<Uint8List> exportGlobalHistory({
     String? keyword,
     String? startDate,
     String? endDate,
   }) async {
+    final queryParams = <String, dynamic>{};
+
+    if (keyword != null && keyword.isNotEmpty) queryParams['keyword'] = keyword;
+    if (startDate != null && startDate.isNotEmpty)
+      queryParams['start_date'] = startDate;
+    if (endDate != null && endDate.isNotEmpty)
+      queryParams['end_date'] = endDate;
+
     final response = await _dio.get(
       '/api/v1/machine-assignments/export/global',
-      queryParameters: {
-        'keyword': keyword,
-        'start_date': ?startDate,
-        'end_date': ?endDate,
-      },
+      queryParameters: queryParams,
       options: Options(responseType: ResponseType.bytes),
     );
     return response.data;
   }
 
-  // 11. Xuất Excel 1 máy
+  // 11. Xuất Excel 1 máy (ĐÃ FIX LỖI 422)
   Future<Uint8List> exportSingleMachineHistory(
     int machineId, {
     String? startDate,
     String? endDate,
   }) async {
+    final queryParams = <String, dynamic>{};
+
+    if (startDate != null && startDate.isNotEmpty)
+      queryParams['start_date'] = startDate;
+    if (endDate != null && endDate.isNotEmpty)
+      queryParams['end_date'] = endDate;
+
     final response = await _dio.get(
       '/api/v1/machine-assignments/export/$machineId',
-      queryParameters: {'start_date': ?startDate, 'end_date': ?endDate},
+      queryParameters: queryParams,
       options: Options(responseType: ResponseType.bytes),
     );
     return response.data;

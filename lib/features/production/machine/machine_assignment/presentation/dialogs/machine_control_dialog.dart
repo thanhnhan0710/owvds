@@ -7,6 +7,8 @@ import 'package:owvds/features/production/machine/machine_assignment/data/machin
 import 'package:owvds/features/production/machine/machine_assignment/presentation/bloc/machine_assignment_cubit.dart';
 import 'package:owvds/features/production/machine/machine_assignment/presentation/screens/singel_machine_history_screen.dart';
 
+import 'assign_product_dialog.dart';
+
 class MachineControlDialog extends StatelessWidget {
   final Machine machine;
   final Product? selectedProduct;
@@ -19,6 +21,9 @@ class MachineControlDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Lấy số line cấu hình từ DB, mặc định 1
+    final int totalLines = machine.totalLines ?? 1;
+
     return BlocProvider(
       create: (_) => MachineAssignmentCubit(
         repo: MachineAssignmentRepository(),
@@ -27,207 +32,258 @@ class MachineControlDialog extends StatelessWidget {
       child: Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
-          width: 500,
+          width: 700,
+          height: 600,
           padding: const EdgeInsets.all(24),
-          child: BlocBuilder<MachineAssignmentCubit, MachineAssignmentState>(
-            builder: (context, state) {
-              if (state is MachineAssignmentLoading) {
-                return const SizedBox(
-                  height: 300,
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              if (state is MachineAssignmentError) {
-                return Center(
-                  child: Text(
-                    state.message,
-                    style: const TextStyle(color: Colors.red),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // --- HEADER ---
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.precision_manufacturing,
+                        color: Color(0xFF003366),
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        "Máy: ${machine.machineName}",
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF003366),
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              }
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const Divider(height: 32),
 
-              if (state is MachineAssignmentLoaded) {
-                final currentRunning = state.currentRunning;
-                final isRunning = currentRunning != null;
+              // --- BODY: DANH SÁCH LINE CHẠY ĐỘC LẬP ---
+              Expanded(
+                child: BlocBuilder<MachineAssignmentCubit, MachineAssignmentState>(
+                  builder: (context, state) {
+                    if (state is MachineAssignmentLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (state is MachineAssignmentError) {
+                      return Center(
+                        child: Text(
+                          state.message,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      );
+                    }
 
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.precision_manufacturing,
-                              color: Color(0xFF003366),
-                              size: 28,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              "Máy: ${machine.machineName}",
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF003366),
+                    if (state is MachineAssignmentLoaded) {
+                      final currentRunningLines = state.currentRunningLines;
+
+                      return ListView.separated(
+                        itemCount: totalLines,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final lineNumber = index + 1;
+
+                          // Lọc xem Line hiện tại có đang chạy mã nào không
+                          final matches = currentRunningLines.where(
+                            (e) => e.lineNumber == lineNumber,
+                          );
+                          final assignmentForLine = matches.isNotEmpty
+                              ? matches.first
+                              : null;
+                          final isThisLineRunning = assignmentForLine != null;
+
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isThisLineRunning
+                                  ? Colors.green.shade50
+                                  : Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isThisLineRunning
+                                    ? Colors.green.shade200
+                                    : Colors.grey.shade300,
                               ),
                             ),
-                          ],
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 32),
-
-                    // Thông tin hiện tại
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isRunning
-                            ? Colors.green.shade50
-                            : Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isRunning
-                              ? Colors.green.shade200
-                              : Colors.grey.shade300,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "TRẠNG THÁI HIỆN TẠI",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          if (isRunning) ...[
-                            Row(
+                            child: Row(
                               children: [
-                                const Icon(
-                                  Icons.play_circle_fill,
-                                  color: Colors.green,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
+                                // Badge Số Line
+                                Container(
+                                  width: 50,
+                                  height: 50,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: isThisLineRunning
+                                        ? Colors.green
+                                        : Colors.grey.shade300,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
                                   child: Text(
-                                    "Đang chạy: ${currentRunning.product?.itemCode ?? 'Sản phẩm ID ${currentRunning.productId}'}",
-                                    style: const TextStyle(
-                                      fontSize: 18,
+                                    "L$lineNumber",
+                                    style: TextStyle(
+                                      color: isThisLineRunning
+                                          ? Colors.white
+                                          : Colors.black54,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.green,
+                                      fontSize: 16,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              "Mã hàng: ${currentRunning.product?.itemCode ?? 'N/A'}",
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                            Text(
-                              "Bắt đầu lúc: ${DateFormat('dd/MM/yyyy HH:mm').format(currentRunning.startTime)}",
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                          ] else ...[
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.stop_circle,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  "Máy đang trống (Chờ lệnh)",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
+                                const SizedBox(width: 16),
 
-                    // Hành động
-                    if (selectedProduct != null) ...[
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF003366),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        icon: const Icon(Icons.assignment_turned_in),
-                        label: Text(
-                          isRunning
-                              ? "Dừng mã cũ & Gán mã [${selectedProduct!.itemCode}]"
-                              : "Gán mã hàng [${selectedProduct!.itemCode}]",
-                        ),
-                        onPressed: () {
-                          context.read<MachineAssignmentCubit>().assignProduct(
-                            selectedProduct!.id,
-                            notes: "Gán từ màn hình điều độ",
+                                // Trạng thái của riêng Line này
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        isThisLineRunning
+                                            ? "ĐANG CHẠY"
+                                            : "MÁY TRỐNG",
+                                        style: TextStyle(
+                                          color: isThisLineRunning
+                                              ? Colors.green.shade700
+                                              : Colors.grey,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      if (isThisLineRunning) ...[
+                                        Text(
+                                          assignmentForLine.product?.itemCode ??
+                                              'Sản phẩm ID: ${assignmentForLine.productId}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        Text(
+                                          "Từ: ${DateFormat('dd/MM/yyyy HH:mm').format(assignmentForLine.startTime)}",
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ] else
+                                        Text(
+                                          "Chưa có mã hàng được gán",
+                                          style: TextStyle(
+                                            color: Colors.grey.shade500,
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+
+                                // Thao tác cho Line này
+                                Row(
+                                  children: [
+                                    if (isThisLineRunning)
+                                      IconButton(
+                                        tooltip: "Dừng Line $lineNumber",
+                                        icon: const Icon(
+                                          Icons.stop_circle,
+                                          color: Colors.red,
+                                          size: 28,
+                                        ),
+                                        onPressed: () {
+                                          context
+                                              .read<MachineAssignmentCubit>()
+                                              .stopMachine(lineNumber);
+                                        },
+                                      ),
+                                    const SizedBox(width: 8),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: isThisLineRunning
+                                            ? Colors.blueGrey
+                                            : const Color(0xFF003366),
+                                        foregroundColor: Colors.white,
+                                      ),
+                                      onPressed: () {
+                                        if (selectedProduct != null) {
+                                          context
+                                              .read<MachineAssignmentCubit>()
+                                              .assignProduct(
+                                                selectedProduct!.id,
+                                                lineNumber, // Truyền đúng Line Number
+                                                notes: "Gán từ Dashboard",
+                                              );
+                                        } else {
+                                          showDialog(
+                                            context: context,
+                                            // [QUAN TRỌNG]: Phải truyền sẵn Cubit cho Dialog mở ra để nó gọi hàm được
+                                            builder: (_) => BlocProvider.value(
+                                              value: context
+                                                  .read<
+                                                    MachineAssignmentCubit
+                                                  >(),
+                                              child: AssignProductDialog(
+                                                machine: machine,
+                                                lineNumber: lineNumber,
+                                                isRunning: isThisLineRunning,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      child: Text(
+                                        isThisLineRunning
+                                            ? "Đổi Mã"
+                                            : "Gán Mã Hàng",
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           );
                         },
-                      ),
-                      const SizedBox(height: 12),
-                    ],
+                      );
+                    }
+                    return const SizedBox();
+                  },
+                ),
+              ),
 
-                    if (isRunning) ...[
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+              const Divider(height: 32),
+
+              // --- FOOTER ---
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.history),
+                  label: const Text("Xem toàn bộ lịch sử chạy máy"),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => MachineHistoryScreen(
+                          machineId: machine.id,
+                          machineName: machine.machineName,
                         ),
-                        icon: const Icon(Icons.stop),
-                        label: const Text("Dừng sản xuất mã hiện tại"),
-                        onPressed: () => context
-                            .read<MachineAssignmentCubit>()
-                            .stopMachine(),
                       ),
-                      const SizedBox(height: 12),
-                    ],
-
-                    // [ĐÃ SỬA]: Nút xem lịch sử dùng Navigator.push
-                    TextButton.icon(
-                      icon: const Icon(Icons.history),
-                      label: const Text("Xem toàn bộ lịch sử chạy máy"),
-                      onPressed: () {
-                        // Đóng form hiện tại trước khi chuyển trang
-                        Navigator.pop(context);
-
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => MachineHistoryScreen(
-                              machineId: machine.id,
-                              machineName: machine.machineName,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                );
-              }
-              return const SizedBox();
-            },
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),

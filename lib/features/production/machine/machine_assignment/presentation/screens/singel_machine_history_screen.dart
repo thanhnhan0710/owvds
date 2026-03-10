@@ -94,8 +94,9 @@ class MachineHistoryScreen extends StatelessWidget {
                                       size: 20,
                                     ),
                                   ),
+                                  // [ĐÃ CẬP NHẬT]: Hiển thị thêm Line Number
                                   title: Text(
-                                    "Mã hàng: ${r.product?.itemCode ?? 'N/A'}",
+                                    "Line ${r.lineNumber}  |  Mã hàng: ${r.product?.itemCode ?? 'N/A'}",
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),

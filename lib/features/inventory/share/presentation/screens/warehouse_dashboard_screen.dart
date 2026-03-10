@@ -5,8 +5,12 @@ import 'package:go_router/go_router.dart';
 // Đảm bảo import đúng đường dẫn đến file AdminSidebar và ResponsiveLayout của bạn
 import 'package:owvds/features/home/presentation/widgets/admin_sidebar.dart';
 import 'package:owvds/core/widgets/responsive_layout.dart';
+import 'package:owvds/core/network/websocket_service.dart';
 
 import 'package:owvds/features/inventory/material/presentation/bloc/material_cubit.dart';
+import 'package:owvds/features/inventory/material_receipt/presentation/bloc/material_receipt_cubit.dart';
+// [MỚI]: Import Cubit Tồn kho để tính toán cảnh báo
+import 'package:owvds/features/inventory/material_inventory/presentation/bloc/material_inventory_cubit.dart';
 
 class WarehouseDashboardScreen extends StatefulWidget {
   const WarehouseDashboardScreen({super.key});
@@ -26,8 +30,29 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // Tải dữ liệu nguyên vật liệu khi mở Dashboard để lấy TotalCount
+    // Tải toàn bộ dữ liệu cần thiết cho Dashboard
     context.read<MaterialCubit>().loadMaterials();
+    context.read<MaterialReceiptCubit>().loadInitial();
+    context.read<MaterialInventoryCubit>().loadInventories();
+
+    // [WEBSOCKET]: Lắng nghe sự kiện để cập nhật Dashboard Realtime
+    WebSocketService().connect();
+    WebSocketService().addListener(_onWebSocketMessage);
+  }
+
+  void _onWebSocketMessage(String message) {
+    if (!mounted) return;
+    if (message == "REFRESH_MATERIAL_RECEIPTS") {
+      context.read<MaterialReceiptCubit>().loadInitial();
+    } else if (message == "REFRESH_MATERIAL_INVENTORIES") {
+      context.read<MaterialInventoryCubit>().loadInventories();
+    }
+  }
+
+  @override
+  void dispose() {
+    WebSocketService().removeListener(_onWebSocketMessage);
+    super.dispose();
   }
 
   // Hàm xử lý điều hướng chung cho Sidebar
@@ -41,15 +66,28 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
     }
   }
 
-  // Tách riêng cụm Avatar và Thông báo để tái sử dụng
-  List<Widget> _buildAppBarActions() {
+  // Cụm Avatar và Thông báo (Truyền số lượng cảnh báo vào)
+  List<Widget> _buildAppBarActions(int alertCount) {
     return [
       IconButton(
-        icon: const Badge(
-          label: Text('3'),
-          child: Icon(Icons.notifications_active_outlined),
+        icon: Badge(
+          label: Text(alertCount.toString()),
+          isLabelVisible:
+              alertCount > 0, // Tự động ẩn dấu đỏ nếu không có cảnh báo
+          child: const Icon(Icons.notifications_active_outlined),
         ),
-        onPressed: () {},
+        onPressed: () {
+          if (alertCount > 0) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '⚠️ Có $alertCount loại vật tư đang dưới mức tồn kho an toàn!',
+                ),
+                backgroundColor: Colors.red.shade600,
+              ),
+            );
+          }
+        },
         tooltip: "Cảnh báo tồn kho",
       ),
       const SizedBox(width: 8),
@@ -69,17 +107,57 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
     final isTablet = screenWidth >= 600 && screenWidth < 1000;
     final isDesktop = ResponsiveLayout.isDesktop(context);
 
-    // Mock User Info (Có thể lấy từ AuthCubit sau)
-    String userName = "Admin";
-    String userRole = "Administrator";
+    // Mock User Info
     bool isAdmin = true;
     String currentPath = '/warehouse-dashboard';
+
+    // Lắng nghe trạng thái của các Cubit
+    final matState = context.watch<MaterialCubit>().state;
+    final invState = context.watch<MaterialInventoryCubit>().state;
+    final receiptState = context.watch<MaterialReceiptCubit>().state;
+
+    // --- TÍNH TOÁN KPI ---
+    String matCountStr = "...";
+    if (matState is MaterialLoaded) {
+      // Ép kiểu dynamic tránh lỗi nếu bạn code totalCount là int
+      matCountStr = (matState as dynamic).totalCount.toString();
+    }
+
+    String receiptCountStr = "...";
+    if (receiptState is MaterialReceiptLoaded) {
+      receiptCountStr =
+          receiptState.receipts.length.toString() +
+          (receiptState.hasNextPage ? "+" : "");
+    }
+
+    // Tính toán Tồn kho sắp hết (Low Stock)
+    int lowStockCount = 0;
+    bool invHasNext = false;
+    if (matState is MaterialLoaded && invState is MaterialInventoryLoaded) {
+      invHasNext = invState.hasNextPage;
+      for (var inv in invState.inventories) {
+        var matches = matState.materials.where(
+          (m) => m.materialId == inv.materialId,
+        );
+        final mat = matches.isNotEmpty ? matches.first : null;
+
+        // Nếu số lượng Kg hiện tại < Mức quy định tối thiểu
+        if (mat != null &&
+            mat.minStockLevel > 0 &&
+            inv.quantityKg < mat.minStockLevel) {
+          lowStockCount++;
+        }
+      }
+    }
+    String lowStockStr =
+        (matState is MaterialLoaded && invState is MaterialInventoryLoaded)
+        ? "$lowStockCount${invHasNext ? '+' : ''}"
+        : "...";
 
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: _bgColor,
 
-      // Trên Desktop tắt AppBar mặc định vì sẽ tự dựng Header bên trong
       appBar: isDesktop
           ? null
           : AppBar(
@@ -94,10 +172,9 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
                 icon: const Icon(Icons.menu),
                 onPressed: () => _scaffoldKey.currentState?.openDrawer(),
               ),
-              actions: _buildAppBarActions(),
+              actions: _buildAppBarActions(lowStockCount), // Truyền số cảnh báo
             ),
 
-      // Đưa Sidebar vào Drawer cho phiên bản Mobile/Tablet nhỏ
       drawer: isDesktop
           ? null
           : Drawer(
@@ -108,11 +185,9 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
               ),
             ),
 
-      // Bố cục chính
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Cột 1: Hiển thị thanh Admin Sidebar cố định trên màn hình lớn (Desktop)
           if (isDesktop)
             AdminSidebar(
               currentPath: currentPath,
@@ -120,11 +195,9 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
               onNavigate: _onNavigate,
             ),
 
-          // Cột 2: Nội dung trang Dashboard
           Expanded(
             child: Column(
               children: [
-                // Thanh Header nằm ngang cho Desktop
                 if (isDesktop)
                   Container(
                     height: 64,
@@ -146,12 +219,13 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
                           ),
                         ),
                         const Spacer(),
-                        ..._buildAppBarActions(),
+                        ..._buildAppBarActions(
+                          lowStockCount,
+                        ), // Truyền số cảnh báo
                       ],
                     ),
                   ),
 
-                // Nội dung chính
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24.0),
@@ -177,35 +251,27 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
                           mainAxisSpacing: 16,
                           childAspectRatio: isMobile ? 1.5 : 2.0,
                           children: [
-                            BlocBuilder<MaterialCubit, MaterialState>(
-                              builder: (context, state) {
-                                String countStr = "...";
-                                if (state is MaterialLoaded) {
-                                  countStr = state.totalCount.toString();
-                                }
-                                return _buildKpiCard(
-                                  title: "Mã NVL",
-                                  value: countStr,
-                                  icon: Icons.category,
-                                  color: Colors.blue,
-                                );
-                              },
+                            _buildKpiCard(
+                              title: "Mã NVL",
+                              value: matCountStr,
+                              icon: Icons.category,
+                              color: Colors.blue,
                             ),
                             _buildKpiCard(
                               title: "Sắp hết hàng",
-                              value: "12",
+                              value: lowStockStr,
                               icon: Icons.warning_amber_rounded,
                               color: Colors.redAccent,
                             ),
                             _buildKpiCard(
                               title: "Phiếu Nhập",
-                              value: "8",
+                              value: receiptCountStr,
                               icon: Icons.input,
                               color: Colors.teal,
                             ),
                             _buildKpiCard(
                               title: "Phiếu Xuất",
-                              value: "24",
+                              value: "24", // Đợi tích hợp Phiếu xuất
                               icon: Icons.output,
                               color: Colors.orange,
                             ),
@@ -232,7 +298,6 @@ class _WarehouseDashboardScreenState extends State<WarehouseDashboardScreen> {
                           mainAxisSpacing: 16,
                           childAspectRatio: isMobile ? 3.0 : 2.5,
                           children: [
-                            // [MỚI BỔ SUNG]: Link đi đến trang Quản lý Đơn mua hàng (PO)
                             _buildFeatureCard(
                               context,
                               title: "Đơn Mua Hàng (PO)",

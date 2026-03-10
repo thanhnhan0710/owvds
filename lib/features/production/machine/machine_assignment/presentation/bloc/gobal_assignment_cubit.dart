@@ -9,7 +9,7 @@ class GlobalAssignmentInitial extends GlobalAssignmentState {}
 class GlobalAssignmentLoading extends GlobalAssignmentState {}
 
 class GlobalAssignmentLoaded extends GlobalAssignmentState {
-  final Map<int, MachineProductHistory> activeAssignments;
+  final Map<int, List<MachineProductHistory>> activeAssignments;
   final List<MachineProductHistory> globalHistory;
 
   GlobalAssignmentLoaded({
@@ -36,14 +36,15 @@ class GlobalAssignmentCubit extends Cubit<GlobalAssignmentState> {
         _repo.getGlobalHistory(keyword: historyKeyword),
       ]);
 
-      // ignore: unnecessary_cast
       final activeList = results[0] as List<MachineProductHistory>;
-      // ignore: unnecessary_cast
       final historyList = results[1] as List<MachineProductHistory>;
 
-      final Map<int, MachineProductHistory> activeMap = {};
+      final Map<int, List<MachineProductHistory>> activeMap = {};
       for (var record in activeList) {
-        activeMap[record.machineId] = record;
+        if (!activeMap.containsKey(record.machineId)) {
+          activeMap[record.machineId] = [];
+        }
+        activeMap[record.machineId]!.add(record);
       }
 
       emit(
@@ -59,11 +60,12 @@ class GlobalAssignmentCubit extends Cubit<GlobalAssignmentState> {
 
   Future<void> assignProduct(
     int machineId,
-    int productId, {
+    int productId,
+    int lineNumber, {
     String? notes,
   }) async {
     try {
-      await _repo.assignProduct(machineId, productId, notes: notes);
+      await _repo.assignProduct(machineId, productId, lineNumber, notes: notes);
       await loadDashboardData();
     } catch (e) {
       emit(GlobalAssignmentError("Lỗi gán mã: $e"));
@@ -71,32 +73,36 @@ class GlobalAssignmentCubit extends Cubit<GlobalAssignmentState> {
     }
   }
 
-  // ==========================================
-  // [MỚI] HÀM GÁN HÀNG LOẠT (BATCH ASSIGNMENT)
-  // ==========================================
+  // [ĐÃ CẢI TIẾN]: Nhận Map chứa danh sách Line của từng máy
   Future<void> assignProductToMultipleMachines(
-    List<int> machineIds,
+    Map<int, Set<int>> machineLines,
     int productId, {
     String? notes,
   }) async {
     emit(GlobalAssignmentLoading());
     try {
-      // Dùng Future.wait để bắn API gán đồng loạt cho nhiều máy cùng lúc
-      await Future.wait(
-        machineIds.map(
-          (id) => _repo.assignProduct(id, productId, notes: notes),
-        ),
-      );
-      await loadDashboardData(); // Tải lại giao diện sau khi gán xong
+      List<Future> tasks = [];
+
+      // Duyệt qua từng máy và từng line được chọn để tạo các tác vụ gọi API
+      machineLines.forEach((machineId, lines) {
+        for (var lineNumber in lines) {
+          tasks.add(
+            _repo.assignProduct(machineId, productId, lineNumber, notes: notes),
+          );
+        }
+      });
+
+      await Future.wait(tasks); // Chạy đồng loạt tất cả các line
+      await loadDashboardData();
     } catch (e) {
       emit(GlobalAssignmentError("Lỗi gán mã hàng loạt: $e"));
       await loadDashboardData();
     }
   }
 
-  Future<void> stopMachine(int machineId) async {
+  Future<void> stopMachine(int machineId, int lineNumber) async {
     try {
-      await _repo.stopProduct(machineId);
+      await _repo.stopProduct(machineId, lineNumber);
       await loadDashboardData();
     } catch (e) {
       emit(GlobalAssignmentError("Lỗi dừng máy: $e"));

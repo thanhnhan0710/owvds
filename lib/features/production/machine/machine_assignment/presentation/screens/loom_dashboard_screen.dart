@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:math'; // Import để dùng hàm max, min
 import 'package:owvds/core/network/websocket_service.dart';
 import 'package:owvds/core/widgets/responsive_layout.dart';
 import 'package:owvds/features/area/presentation/bloc/area_cubit.dart';
 import 'package:owvds/features/production/loom_state/product/presentation/bloc/product_cubit.dart';
+import 'package:owvds/features/production/machine/machine/domain/machine_model.dart';
 import 'package:owvds/features/production/machine/machine/presentation/bloc/machine_cubit.dart';
 import 'package:owvds/features/production/machine/machine_assignment/presentation/bloc/gobal_assignment_cubit.dart';
 import 'package:owvds/features/production/machine/machine_assignment/presentation/screens/gobal_history_screen.dart';
-import 'package:owvds/features/production/machine/machine_assignment/presentation/screens/singel_machine_history_screen.dart';
 import 'package:owvds/features/production/machine/presentation/widgets/area_slidebar.dart';
+import 'package:owvds/features/production/machine/machine_assignment/domain/machine_assignment_model.dart';
 
-import '../dialogs/assign_product_dialog.dart';
 import '../dialogs/batch_assign_dialog.dart';
+import '../dialogs/machine_control_dialog.dart';
 
 class LoomDashboardScreen extends StatefulWidget {
   const LoomDashboardScreen({super.key});
@@ -23,8 +25,6 @@ class LoomDashboardScreen extends StatefulWidget {
 class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
   int? _selectedAreaId;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
-  // [MỚI] Biến trạng thái để lưu bộ lọc hiện tại ('all', 'running', 'empty')
   String _filterStatus = 'all';
 
   @override
@@ -53,7 +53,7 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
   void _onAreaSelected(int? areaId) {
     setState(() {
       _selectedAreaId = areaId;
-      _filterStatus = 'all'; // Tự động reset bộ lọc về 'Tất cả' khi đổi khu vực
+      _filterStatus = 'all';
     });
     context.read<MachineCubit>().loadMachines(filterAreaId: areaId);
 
@@ -63,7 +63,6 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
     }
   }
 
-  // [MỚI] Hàm vẽ Nút Filter (Chip)
   Widget _buildFilterChip(String label, String value, {Color? color}) {
     final isSelected = _filterStatus == value;
     final activeColor = color ?? const Color(0xFF003366);
@@ -97,10 +96,185 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
     );
   }
 
+  // =========================================================================
+  // Giao diện Card Máy (Đã loại bỏ tham số width cố định từ GridView)
+  // =========================================================================
+  Widget _buildMachineCard(
+    BuildContext context,
+    Machine machine,
+    List<MachineProductHistory> runningAssignments,
+    double width,
+    double height,
+  ) {
+    final int totalLines = machine.totalLines ?? 1;
+
+    const Color cardBorderColor = Color(0xFFBDBDBD);
+    const Color headerBgColor = Color(0xFFEEEEEE);
+    const Color headerTextColor = Color(0xFF424242);
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Card(
+        color: Colors.white,
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(6),
+          side: const BorderSide(color: cardBorderColor, width: 1.5),
+        ),
+        child: InkWell(
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (_) => MachineControlDialog(machine: machine),
+            );
+          },
+          borderRadius: BorderRadius.circular(6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // --- HEADER MÁY ---
+              Container(
+                height: 26,
+                decoration: const BoxDecoration(
+                  color: headerBgColor,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 28),
+                      child: Text(
+                        machine.machineName,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: headerTextColor,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const Positioned(
+                      right: 4,
+                      child: Icon(
+                        Icons.settings,
+                        size: 14,
+                        color: headerTextColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // --- BODY (CÁC LINE NẰM NGANG NHAU) ---
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: List.generate(totalLines, (index) {
+                      final int lineNum = index + 1;
+                      final int assignIdx = runningAssignments.indexWhere(
+                        (e) => e.lineNumber == lineNum,
+                      );
+
+                      final bool isLineRunning = assignIdx != -1;
+                      final assignment = isLineRunning
+                          ? runningAssignments[assignIdx]
+                          : null;
+                      final String itemCode = isLineRunning
+                          ? (assignment?.product?.itemCode ?? 'N/A')
+                          : 'Trống';
+
+                      // Lấy màu nền và màu chữ
+                      final Color bg = isLineRunning
+                          ? const Color(0xFFD6F0FF)
+                          : Colors.grey.shade100;
+                      final Color fg = isLineRunning
+                          ? const Color(0xFF0066CC)
+                          : Colors.grey.shade500;
+
+                      return Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.only(left: index == 0 ? 0 : 2),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: bg,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 4,
+                              horizontal: 2,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // Bảng tên Line nhỏ gọn
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 1,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isLineRunning
+                                        ? fg.withOpacity(0.15)
+                                        : Colors.grey.shade300,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'L$lineNum',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: isLineRunning
+                                          ? fg
+                                          : Colors.grey.shade700,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+
+                                // Mã Sản Phẩm TO RÕ, ưu tiên không gian
+                                Expanded(
+                                  child: Center(
+                                    child: Text(
+                                      itemCode,
+                                      style: TextStyle(
+                                        fontSize: 12, // Kích thước chữ to
+                                        color: fg,
+                                        fontWeight: FontWeight.w900,
+                                        height: 1.1,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDesktop = ResponsiveLayout.isDesktop(context);
-    final isMobile = MediaQuery.of(context).size.width < 600;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -115,7 +289,7 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
             ),
       appBar: AppBar(
         title: Text(
-          isMobile ? "Quản lý loom dệt" : "Quản lý loom dệt",
+          "Điều độ Sản xuất",
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: isMobile ? 15 : 16,
@@ -151,7 +325,6 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
                 MaterialPageRoute(builder: (_) => const GlobalHistoryScreen()),
               ),
             ),
-            const SizedBox(width: 4),
           ] else ...[
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
@@ -177,7 +350,6 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
             const SizedBox(width: 16),
           ],
         ],
-        // [MỚI] Thanh Filter đếm số lượng hiển thị ngay bên dưới AppBar
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: BlocBuilder<MachineCubit, MachineState>(
@@ -192,12 +364,13 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
                 builder: (context, assignState) {
                   int runningCount = 0;
                   if (assignState is GlobalAssignmentLoaded) {
-                    runningCount = weavingMachines
-                        .where(
-                          (m) =>
-                              assignState.activeAssignments.containsKey(m.id),
-                        )
-                        .length;
+                    runningCount = weavingMachines.where((m) {
+                      final tLines = m.totalLines ?? 1;
+                      final assigns = assignState.activeAssignments[m.id] ?? [];
+                      return assigns.any(
+                        (a) => a.lineNumber > 0 && a.lineNumber <= tLines,
+                      );
+                    }).length;
                   }
                   int emptyCount = weavingMachines.length - runningCount;
 
@@ -220,7 +393,7 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
                           ),
                           const SizedBox(width: 8),
                           _buildFilterChip(
-                            'Đã có sản phẩm ($runningCount)',
+                            'Có Line chạy ($runningCount)',
                             'running',
                             color: Colors.green.shade700,
                           ),
@@ -248,7 +421,6 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
               selectedAreaId: _selectedAreaId,
               onAreaSelected: _onAreaSelected,
             ),
-
           Expanded(
             child: BlocBuilder<MachineCubit, MachineState>(
               builder: (context, machineState) {
@@ -272,17 +444,21 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
                     GlobalAssignmentState
                   >(
                     builder: (context, assignState) {
-                      Map<int, dynamic> activeMap = {};
+                      Map<int, List<MachineProductHistory>> activeMap = {};
                       if (assignState is GlobalAssignmentLoaded) {
                         activeMap = assignState.activeAssignments;
                       }
 
-                      // [MỚI] Tiến hành lọc danh sách máy theo trạng thái đã chọn trên AppBar
                       final filteredMachines = weavingMachines.where((m) {
-                        final isRunning = activeMap.containsKey(m.id);
+                        final tLines = m.totalLines ?? 1;
+                        final assigns = activeMap[m.id] ?? [];
+                        final isRunning = assigns.any(
+                          (a) => a.lineNumber > 0 && a.lineNumber <= tLines,
+                        );
+
                         if (_filterStatus == 'running') return isRunning;
                         if (_filterStatus == 'empty') return !isRunning;
-                        return true; // 'all'
+                        return true;
                       }).toList();
 
                       if (filteredMachines.isEmpty) {
@@ -308,205 +484,60 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
                         );
                       }
 
-                      final screenWidth = MediaQuery.of(context).size.width;
-                      int crossAxisCount = 4;
-                      if (isMobile) {
-                        crossAxisCount = 2;
-                      } else if (screenWidth < 1100) {
-                        crossAxisCount = 3;
-                      }
+                      // [CẬP NHẬT QUAN TRỌNG]: TÍNH TOÁN CHIỀU NGANG THEO SỐ LINE
+                      // Khai báo kích thước chuẩn của máy có 2 Line.
+                      final double standardWidthFor2Lines = isMobile
+                          ? 180.0
+                          : 260.0;
+                      // Chiều cao cố định không đổi dù máy có mấy Line
+                      final double fixedHeight = isMobile ? 85.0 : 100.0;
+                      final double wrapSpacing = isMobile ? 8.0 : 16.0;
 
-                      return GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
-                          mainAxisExtent: 165,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
+                      return SingleChildScrollView(
+                        padding: EdgeInsets.all(isMobile ? 8.0 : 16.0),
+                        child: Wrap(
+                          spacing: wrapSpacing,
+                          runSpacing: wrapSpacing,
+                          children: filteredMachines.map((machine) {
+                            final int totalLines = machine.totalLines ?? 1;
+
+                            // Lọc bản ghi
+                            final List<MachineProductHistory> rawAssignments =
+                                activeMap[machine.id] ?? [];
+                            final List<MachineProductHistory> validAssignments =
+                                rawAssignments
+                                    .where(
+                                      (a) =>
+                                          a.lineNumber > 0 &&
+                                          a.lineNumber <= totalLines,
+                                    )
+                                    .toList();
+
+                            // TÍNH TOÁN WIDTH THEO TỶ LỆ (Chuẩn là 2 line)
+                            // 2 line = 1x chuẩn. 4 line = 2x chuẩn. 3 line = 1.5x chuẩn.
+                            double cardWidth =
+                                (totalLines / 2.0) * standardWidthFor2Lines;
+
+                            // Tránh trường hợp máy 1 line bị quá nhỏ, không thấy được tên máy
+                            double minWidth = isMobile ? 120.0 : 160.0;
+                            cardWidth = max(cardWidth, minWidth);
+
+                            // Tránh trường hợp máy quá nhiều line (ví dụ 8 line) bị tràn màn hình
+                            double maxWidth =
+                                screenWidth - (isMobile ? 16 : 32);
+                            if (isDesktop)
+                              maxWidth -= 250; // Trừ hao thanh sidebar bên trái
+                            cardWidth = min(cardWidth, maxWidth);
+
+                            return _buildMachineCard(
+                              context,
+                              machine,
+                              validAssignments,
+                              cardWidth,
+                              fixedHeight,
+                            );
+                          }).toList(),
                         ),
-                        itemCount:
-                            filteredMachines.length, // Dùng danh sách đã lọc
-                        itemBuilder: (context, index) {
-                          final machine =
-                              filteredMachines[index]; // Dùng danh sách đã lọc
-                          final currentAssignment = activeMap[machine.id];
-                          final isRunning = currentAssignment != null;
-
-                          return Card(
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => MachineHistoryScreen(
-                                      machineId: machine.id,
-                                      machineName: machine.machineName,
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.all(12.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Row(
-                                            children: [
-                                              const Icon(
-                                                Icons.precision_manufacturing,
-                                                color: Color(0xFF003366),
-                                                size: 20,
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Expanded(
-                                                child: Text(
-                                                  machine.machineName,
-                                                  style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 15,
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        PopupMenuButton<String>(
-                                          tooltip: "Thao tác gán máy",
-                                          padding: EdgeInsets.zero,
-                                          iconSize: 20,
-                                          onSelected: (val) {
-                                            if (val == 'assign') {
-                                              showDialog(
-                                                context: context,
-                                                builder: (_) =>
-                                                    AssignProductDialog(
-                                                      machine: machine,
-                                                      isRunning: isRunning,
-                                                    ),
-                                              );
-                                            } else if (val == 'stop') {
-                                              context
-                                                  .read<GlobalAssignmentCubit>()
-                                                  .stopMachine(machine.id);
-                                            }
-                                          },
-                                          itemBuilder: (context) => [
-                                            const PopupMenuItem(
-                                              value: 'assign',
-                                              child: Text('Gán mã hàng'),
-                                            ),
-                                            if (isRunning)
-                                              const PopupMenuItem(
-                                                value: 'stop',
-                                                child: Text(
-                                                  'Dừng sản xuất',
-                                                  style: TextStyle(
-                                                    color: Colors.red,
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                    const Divider(height: 12),
-
-                                    Expanded(
-                                      child: Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 8,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: isRunning
-                                              ? Colors.green.shade50
-                                              : Colors.grey.shade100,
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          border: Border.all(
-                                            color: isRunning
-                                                ? Colors.green.shade200
-                                                : Colors.grey.shade300,
-                                          ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            if (isRunning) ...[
-                                              const Text(
-                                                "ĐANG CHẠY",
-                                                style: TextStyle(
-                                                  color: Colors.green,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 10,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                currentAssignment
-                                                        .product
-                                                        ?.itemCode ??
-                                                    'N/A',
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 15,
-                                                  color: Color(0xFF003366),
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ] else ...[
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Icon(
-                                                    Icons.stop_circle,
-                                                    color: Colors.grey.shade400,
-                                                    size: 20,
-                                                  ),
-                                                  const SizedBox(width: 6),
-                                                  Text(
-                                                    "MÁY TRỐNG",
-                                                    style: TextStyle(
-                                                      color:
-                                                          Colors.grey.shade600,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
                       );
                     },
                   );

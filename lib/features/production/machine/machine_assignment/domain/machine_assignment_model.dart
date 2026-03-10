@@ -1,4 +1,3 @@
-// --- BỔ SUNG MODEL ---
 class MachineBasicInfo {
   final int machineId;
   final String machineName;
@@ -25,16 +24,18 @@ class MachineProductHistory {
   final int id;
   final int machineId;
   final int productId;
+  final int lineNumber; // [MỚI]
   final DateTime startTime;
   final DateTime? endTime;
   final String? notes;
   final ProductBasicInfo? product;
-  final MachineBasicInfo? machine; // Bổ sung
+  final MachineBasicInfo? machine;
 
   MachineProductHistory({
     required this.id,
     required this.machineId,
     required this.productId,
+    required this.lineNumber,
     required this.startTime,
     this.endTime,
     this.notes,
@@ -47,6 +48,7 @@ class MachineProductHistory {
       id: json['id'] ?? 0,
       machineId: json['machine_id'] ?? 0,
       productId: json['product_id'] ?? 0,
+      lineNumber: json['line_number'] ?? 1, // [MỚI]
       startTime: DateTime.parse(json['start_time']).toLocal(),
       endTime: json['end_time'] != null
           ? DateTime.parse(json['end_time']).toLocal()

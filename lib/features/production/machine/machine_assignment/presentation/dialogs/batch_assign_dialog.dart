@@ -13,8 +13,15 @@ class BatchAssignDialog extends StatefulWidget {
 
 class _BatchAssignDialogState extends State<BatchAssignDialog> {
   int? _selectedProductId;
-  final Set<int> _selectedMachineIds = {};
+
+  // [MỚI]: Map lưu Máy ID -> Danh sách Line Number được chọn
+  final Map<int, Set<int>> _selectedMachineLines = {};
+
   final Color _primaryColor = const Color(0xFF003366);
+
+  int get _totalSelectedMachines => _selectedMachineLines.keys.length;
+  int get _totalSelectedLines =>
+      _selectedMachineLines.values.fold(0, (sum, lines) => sum + lines.length);
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +29,6 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
     final isMobile = size.width < 800;
 
     return Dialog(
-      // Trên Mobile sẽ bung tràn viền 100% màn hình
       insetPadding: isMobile
           ? EdgeInsets.zero
           : const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
@@ -58,7 +64,7 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Gán Mã Hàng Loạt',
+                        'Gán Mã Hàng Loạt (Theo Line)',
                         style: TextStyle(
                           color: _primaryColor,
                           fontWeight: FontWeight.bold,
@@ -78,9 +84,7 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
 
             // --- BODY ---
             Expanded(
-              child: isMobile
-                  ? _buildMobileBody() // Dùng Tab trên Mobile
-                  : _buildDesktopBody(), // Dùng chia đôi cột trên Desktop
+              child: isMobile ? _buildMobileBody() : _buildDesktopBody(),
             ),
 
             // --- FOOTER ---
@@ -99,7 +103,6 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
               child: SafeArea(
                 child: Row(
                   children: [
-                    // Hiển thị tóm tắt cho Mobile
                     if (isMobile)
                       Expanded(
                         child: Column(
@@ -119,7 +122,7 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
                               ),
                             ),
                             Text(
-                              "✓ Đã chọn ${_selectedMachineIds.length} Máy dệt",
+                              "✓ Đã chọn $_totalSelectedLines Line (Của $_totalSelectedMachines Máy)",
                               style: const TextStyle(
                                 color: Colors.blue,
                                 fontWeight: FontWeight.bold,
@@ -154,7 +157,7 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
                       ),
                       icon: const Icon(Icons.check_circle, size: 18),
                       label: Text(
-                        'Gán cho ${_selectedMachineIds.length} Máy',
+                        'Gán vào $_totalSelectedLines Line',
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -162,20 +165,20 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
                       ),
                       onPressed:
                           (_selectedProductId == null ||
-                              _selectedMachineIds.isEmpty)
+                              _selectedMachineLines.isEmpty)
                           ? null
                           : () {
                               context
                                   .read<GlobalAssignmentCubit>()
                                   .assignProductToMultipleMachines(
-                                    _selectedMachineIds.toList(),
+                                    _selectedMachineLines,
                                     _selectedProductId!,
                                   );
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
-                                    "Đã gửi lệnh gán mã hàng loạt!",
+                                    "Đã gửi lệnh gán mã hàng loạt tới các Line!",
                                   ),
                                   backgroundColor: Colors.green,
                                 ),
@@ -211,7 +214,7 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
               labelStyle: const TextStyle(fontWeight: FontWeight.bold),
               tabs: const [
                 Tab(text: "1. Chọn Mã Hàng"),
-                Tab(text: "2. Chọn Máy Dệt"),
+                Tab(text: "2. Chọn Line Máy"),
               ],
             ),
           ),
@@ -246,7 +249,7 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
             child: _buildProductSelection(isMobile: false),
           ),
         ),
-        Container(width: 1, color: Colors.grey.shade200), // Vách ngăn mỏng
+        Container(width: 1, color: Colors.grey.shade200),
         Expanded(
           flex: 1,
           child: Container(
@@ -296,7 +299,7 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
   }
 
   // ==========================================
-  // CỘT 1: CHỌN SẢN PHẨM (CARD STYLE)
+  // CỘT 1: CHỌN SẢN PHẨM
   // ==========================================
 
   Widget _buildProductSelection({required bool isMobile}) {
@@ -324,20 +327,19 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
           child: BlocBuilder<ProductCubit, ProductState>(
             builder: (context, state) {
               if (state is ProductLoaded) {
-                if (state.displayedProducts.isEmpty)
+                if (state.displayedProducts.isEmpty) {
                   return Center(
                     child: Text(
                       "Không tìm thấy sản phẩm",
                       style: TextStyle(color: Colors.grey.shade500),
                     ),
                   );
+                }
 
                 return ListView.separated(
                   padding: const EdgeInsets.only(bottom: 24),
                   itemCount: state.displayedProducts.length,
-                  separatorBuilder: (_, __) => const SizedBox(
-                    height: 8,
-                  ), // Dùng khoảng trắng thay cho đường kẻ
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final p = state.displayedProducts[index];
                     final isSelected = _selectedProductId == p.id;
@@ -388,7 +390,10 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    p.note,
+                                    p.note.isNotEmpty
+                                        ? p.note
+                                        : (p.productType?.typeName ??
+                                              'Không có ghi chú'),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
@@ -415,7 +420,7 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
   }
 
   // ==========================================
-  // CỘT 2: CHỌN MÁY (CARD STYLE)
+  // CỘT 2: CHỌN MÁY VÀ CHỌN LINE
   // ==========================================
 
   Widget _buildMachineSelection({required bool isMobile}) {
@@ -427,7 +432,7 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                "BƯỚC 2: CHỌN MÁY DỆT",
+                "BƯỚC 2: CHỌN LINE THEO MÁY",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -445,7 +450,7 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  "Đã chọn: ${_selectedMachineIds.length}",
+                  "Đã chọn: $_totalSelectedLines Line",
                   style: const TextStyle(
                     color: Colors.blue,
                     fontWeight: FontWeight.bold,
@@ -469,24 +474,30 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
                 final weavingMachines = state.displayedMachines
                     .where((m) => m.polymorphicType == 'weaving_machine')
                     .toList();
-                final isAllSelected =
-                    _selectedMachineIds.length >= weavingMachines.length &&
-                    weavingMachines.isNotEmpty;
+
+                // Tính tổng số line có thể chọn
+                int totalAvailableLines = weavingMachines.fold(
+                  0,
+                  (sum, m) => sum + (m.totalLines ?? 1),
+                );
+                final bool isAllSelected =
+                    _totalSelectedLines == totalAvailableLines &&
+                    totalAvailableLines > 0;
 
                 return Column(
                   children: [
-                    // Nút chọn tất cả (Tạo hình giống một thẻ bấm được)
+                    // Nút chọn TẤT CẢ các Line của TẤT CẢ máy
                     InkWell(
                       onTap: () {
                         setState(() {
                           if (isAllSelected) {
-                            _selectedMachineIds.removeAll(
-                              weavingMachines.map((m) => m.id),
-                            );
+                            _selectedMachineLines.clear();
                           } else {
-                            _selectedMachineIds.addAll(
-                              weavingMachines.map((m) => m.id),
-                            );
+                            for (var m in weavingMachines) {
+                              _selectedMachineLines[m.id] = Set.from(
+                                List.generate(m.totalLines ?? 1, (i) => i + 1),
+                              );
+                            }
                           }
                         });
                       },
@@ -512,7 +523,7 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
                             ),
                             const SizedBox(width: 12),
                             const Text(
-                              "Chọn tất cả máy trong danh sách",
+                              "Chọn tất cả Line trong danh sách",
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
@@ -524,90 +535,194 @@ class _BatchAssignDialogState extends State<BatchAssignDialog> {
                     ),
                     const SizedBox(height: 12),
 
+                    // Danh sách máy và Line
                     Expanded(
                       child: ListView.separated(
                         padding: const EdgeInsets.only(bottom: 24),
                         itemCount: weavingMachines.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final m = weavingMachines[index];
-                          final isSelected = _selectedMachineIds.contains(m.id);
+                          final int totalLines = m.totalLines ?? 1;
+                          final Set<int> selectedLines =
+                              _selectedMachineLines[m.id] ?? {};
 
-                          return InkWell(
-                            onTap: () {
-                              setState(() {
-                                isSelected
-                                    ? _selectedMachineIds.remove(m.id)
-                                    : _selectedMachineIds.add(m.id);
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(10),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 150),
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? Colors.blue.withOpacity(0.06)
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? Colors.blue
-                                      : Colors.grey.shade200,
-                                  width: isSelected ? 1.5 : 1,
-                                ),
+                          // Trạng thái Checkbox của riêng Máy này
+                          final bool isMachineAllSelected =
+                              selectedLines.length == totalLines;
+                          final bool isMachinePartialSelected =
+                              selectedLines.isNotEmpty &&
+                              selectedLines.length < totalLines;
+
+                          return Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: selectedLines.isNotEmpty
+                                    ? Colors.blue.shade200
+                                    : Colors.grey.shade200,
+                                width: selectedLines.isNotEmpty ? 1.5 : 1,
                               ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isSelected
-                                        ? Icons.check_box
-                                        : Icons.check_box_outline_blank,
-                                    color: isSelected
-                                        ? Colors.blue
-                                        : Colors.grey.shade400,
-                                    size: 24,
+                              boxShadow: [
+                                if (selectedLines.isNotEmpty)
+                                  BoxShadow(
+                                    color: Colors.blue.withOpacity(0.05),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
                                   ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Tên Máy + Checkbox chọn toàn bộ máy
+                                InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      if (isMachineAllSelected) {
+                                        _selectedMachineLines.remove(m.id);
+                                      } else {
+                                        _selectedMachineLines[m.id] = Set.from(
+                                          List.generate(
+                                            totalLines,
+                                            (i) => i + 1,
+                                          ),
+                                        );
+                                      }
+                                    });
+                                  },
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        isMachineAllSelected
+                                            ? Icons.check_box
+                                            : (isMachinePartialSelected
+                                                  ? Icons
+                                                        .indeterminate_check_box
+                                                  : Icons
+                                                        .check_box_outline_blank),
+                                        color: selectedLines.isNotEmpty
+                                            ? Colors.blue
+                                            : Colors.grey.shade400,
+                                        size: 24,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
                                           m.machineName,
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 15,
-                                            color: isSelected
+                                            color: selectedLines.isNotEmpty
                                                 ? Colors.blue.shade800
                                                 : Colors.black87,
                                           ),
                                         ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.location_on,
-                                              size: 12,
-                                              color: Colors.grey.shade500,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              m.area?.areaName ??
-                                                  'Chưa phân khu',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey.shade600,
-                                              ),
-                                            ),
-                                          ],
+                                      ),
+                                      Text(
+                                        "${selectedLines.length}/$totalLines",
+                                        style: TextStyle(
+                                          color: Colors.grey.shade500,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
                                         ),
-                                      ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                if (totalLines > 0) ...[
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: 8.0,
                                     ),
+                                    child: Divider(height: 1),
+                                  ),
+                                  // Hiển thị các Checkbox (Chip) đại diện cho từng Line
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: List.generate(totalLines, (i) {
+                                      final line = i + 1;
+                                      final isLineSelected = selectedLines
+                                          .contains(line);
+
+                                      return InkWell(
+                                        onTap: () {
+                                          setState(() {
+                                            if (isLineSelected) {
+                                              _selectedMachineLines[m.id]
+                                                  ?.remove(line);
+                                              if (_selectedMachineLines[m.id]!
+                                                  .isEmpty) {
+                                                _selectedMachineLines.remove(
+                                                  m.id,
+                                                );
+                                              }
+                                            } else {
+                                              _selectedMachineLines
+                                                  .putIfAbsent(m.id, () => {})
+                                                  .add(line);
+                                            }
+                                          });
+                                        },
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 150,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isLineSelected
+                                                ? Colors.blue.shade50
+                                                : Colors.grey.shade100,
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                            border: Border.all(
+                                              color: isLineSelected
+                                                  ? Colors.blue.shade300
+                                                  : Colors.grey.shade300,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                isLineSelected
+                                                    ? Icons.check_circle
+                                                    : Icons.circle_outlined,
+                                                size: 14,
+                                                color: isLineSelected
+                                                    ? Colors.blue
+                                                    : Colors.grey.shade500,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                "Line $line",
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: isLineSelected
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
+                                                  color: isLineSelected
+                                                      ? Colors.blue.shade800
+                                                      : Colors.black87,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }),
                                   ),
                                 ],
-                              ),
+                              ],
                             ),
                           );
                         },

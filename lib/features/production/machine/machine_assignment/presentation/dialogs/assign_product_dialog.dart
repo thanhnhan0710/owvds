@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:owvds/features/production/loom_state/product/presentation/bloc/product_cubit.dart';
 import 'package:owvds/features/production/machine/machine/domain/machine_model.dart';
-import 'package:owvds/features/production/machine/machine_assignment/presentation/bloc/gobal_assignment_cubit.dart';
+// Thay vì dùng Global, ta sẽ dùng MachineAssignmentCubit (vì ta đang ở trong màn hình 1 máy)
+import 'package:owvds/features/production/machine/machine_assignment/presentation/bloc/machine_assignment_cubit.dart';
 
 class AssignProductDialog extends StatefulWidget {
   final Machine machine;
+  final int lineNumber;
   final bool isRunning;
+
   const AssignProductDialog({
     super.key,
     required this.machine,
+    required this.lineNumber,
     required this.isRunning,
   });
 
@@ -24,7 +28,7 @@ class _AssignProductDialogState extends State<AssignProductDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(
-        'Gán Mã Hàng cho Máy ${widget.machine.machineName}',
+        'Gán Mã Hàng - Máy ${widget.machine.machineName} (Line ${widget.lineNumber})',
         style: const TextStyle(
           color: Color(0xFF003366),
           fontWeight: FontWeight.bold,
@@ -44,32 +48,34 @@ class _AssignProductDialogState extends State<AssignProductDialog> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.orange.shade200),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                    SizedBox(width: 8),
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.orange,
+                    ),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        "Máy này đang chạy một mã hàng khác. Việc gán mã mới sẽ tự động DỪNG mã cũ lại và chốt thời gian hiện tại.",
+                        "Line ${widget.lineNumber} đang chạy một mã hàng khác. Việc gán mã mới sẽ tự động DỪNG mã cũ lại.",
                       ),
                     ),
                   ],
                 ),
               ),
 
-            // Thanh tìm kiếm nhanh
             TextField(
               decoration: const InputDecoration(
                 hintText: 'Tìm kiếm sản phẩm...',
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
+                isDense: true,
               ),
               onChanged: (val) =>
                   context.read<ProductCubit>().searchProducts(val),
             ),
             const SizedBox(height: 16),
 
-            // Danh sách chọn
             Expanded(
               child: BlocBuilder<ProductCubit, ProductState>(
                 builder: (context, state) {
@@ -81,16 +87,13 @@ class _AssignProductDialogState extends State<AssignProductDialog> {
                         final p = state.displayedProducts[index];
                         return RadioListTile<int>(
                           value: p.id,
-                          // ignore: deprecated_member_use
                           groupValue: _selectedProductId,
-                          // ignore: deprecated_member_use
                           onChanged: (val) =>
                               setState(() => _selectedProductId = val),
                           title: Text(
                             p.itemCode,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          // [ĐÃ SỬA]: Sử dụng p.note thay vì p.productName (Vì Product Model không có productName)
                           subtitle: Text(
                             p.note.isNotEmpty
                                 ? p.note
@@ -121,13 +124,14 @@ class _AssignProductDialogState extends State<AssignProductDialog> {
           onPressed: _selectedProductId == null
               ? null
               : () {
-                  context.read<GlobalAssignmentCubit>().assignProduct(
-                    widget.machine.id,
+                  // Gọi API qua Cubit
+                  context.read<MachineAssignmentCubit>().assignProduct(
                     _selectedProductId!,
+                    widget.lineNumber,
                   );
                   Navigator.pop(context);
                 },
-          child: const Text('Gán Máy'),
+          child: const Text('Gán Vào Line'),
         ),
       ],
     );

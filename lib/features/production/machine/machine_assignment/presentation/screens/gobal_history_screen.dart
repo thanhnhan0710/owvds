@@ -186,8 +186,9 @@ class _GlobalHistoryScreenState extends State<GlobalHistoryScreen> {
                                             size: 20,
                                           ),
                                         ),
+                                        // [ĐÃ CẬP NHẬT]: Hiển thị thêm Line Number
                                         title: Text(
-                                          "Máy: ${r.machine?.machineName ?? 'N/A'}  |  Mã hàng: ${r.product?.itemCode ?? 'N/A'}",
+                                          "Máy: ${r.machine?.machineName ?? 'N/A'} (Line ${r.lineNumber})  |  Mã hàng: ${r.product?.itemCode ?? 'N/A'}",
                                           style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                           ),

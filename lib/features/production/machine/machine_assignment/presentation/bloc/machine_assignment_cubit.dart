@@ -10,14 +10,13 @@ class MachineAssignmentInitial extends MachineAssignmentState {}
 class MachineAssignmentLoading extends MachineAssignmentState {}
 
 class MachineAssignmentLoaded extends MachineAssignmentState {
-  final MachineProductHistory? currentRunning;
-  final List<MachineProductHistory>
-  history; // Lịch sử hiện đang hiển thị trên UI (có thể đã bị filter)
-  final List<MachineProductHistory>
-  allHistory; // Backup lại toàn bộ lịch sử khi không search
+  // [ĐÃ SỬA LỖI]: Đổi currentRunning thành danh sách currentRunningLines
+  final List<MachineProductHistory> currentRunningLines;
+  final List<MachineProductHistory> history;
+  final List<MachineProductHistory> allHistory;
 
   MachineAssignmentLoaded({
-    required this.currentRunning,
+    required this.currentRunningLines,
     required this.history,
     required this.allHistory,
   });
@@ -33,27 +32,25 @@ class MachineAssignmentCubit extends Cubit<MachineAssignmentState> {
   final MachineAssignmentRepository _repo;
   final int machineId;
 
-  // [ĐÃ SỬA]: Xóa biến positional thừa, chỉ giữ lại named parameters trong ngoặc nhọn
   MachineAssignmentCubit({
     required MachineAssignmentRepository repo,
     required this.machineId,
   }) : _repo = repo,
        super(MachineAssignmentInitial());
 
-  // Tải đồng thời cả Sản phẩm hiện tại và Lịch sử
   Future<void> loadMachineData() async {
     emit(MachineAssignmentLoading());
     try {
       final results = await Future.wait([
-        _repo.getCurrentProduct(machineId),
+        _repo.getCurrentProductLines(machineId), // Lấy danh sách lines
         _repo.getHistory(machineId),
       ]);
 
       emit(
         MachineAssignmentLoaded(
-          currentRunning: results[0] as MachineProductHistory?,
+          currentRunningLines: results[0] as List<MachineProductHistory>,
           history: results[1] as List<MachineProductHistory>,
-          allHistory: results[1] as List<MachineProductHistory>, // Lưu backup
+          allHistory: results[1] as List<MachineProductHistory>,
         ),
       );
     } catch (e) {
@@ -61,10 +58,14 @@ class MachineAssignmentCubit extends Cubit<MachineAssignmentState> {
     }
   }
 
-  Future<void> assignProduct(int productId, {String? notes}) async {
+  Future<void> assignProduct(
+    int productId,
+    int lineNumber, {
+    String? notes,
+  }) async {
     emit(MachineAssignmentLoading());
     try {
-      await _repo.assignProduct(machineId, productId, notes: notes);
+      await _repo.assignProduct(machineId, productId, lineNumber, notes: notes);
       await loadMachineData();
     } catch (e) {
       emit(MachineAssignmentError("Không thể gán sản phẩm: $e"));
@@ -72,10 +73,10 @@ class MachineAssignmentCubit extends Cubit<MachineAssignmentState> {
     }
   }
 
-  Future<void> stopMachine() async {
+  Future<void> stopMachine(int lineNumber) async {
     emit(MachineAssignmentLoading());
     try {
-      await _repo.stopProduct(machineId);
+      await _repo.stopProduct(machineId, lineNumber);
       await loadMachineData();
     } catch (e) {
       emit(MachineAssignmentError("Lỗi dừng máy: $e"));
@@ -83,19 +84,14 @@ class MachineAssignmentCubit extends Cubit<MachineAssignmentState> {
     }
   }
 
-  // ==========================================
-  // [MỚI] TÌM KIẾM, SỬA, XÓA TRÊN GIAO DIỆN
-  // ==========================================
-
   Future<void> searchHistory(String keyword) async {
     if (state is! MachineAssignmentLoaded) return;
     final currentState = state as MachineAssignmentLoaded;
 
     if (keyword.trim().isEmpty) {
-      // Trả lại danh sách gốc nếu xóa tìm kiếm
       emit(
         MachineAssignmentLoaded(
-          currentRunning: currentState.currentRunning,
+          currentRunningLines: currentState.currentRunningLines, // [ĐÃ SỬA]
           history: currentState.allHistory,
           allHistory: currentState.allHistory,
         ),
@@ -108,14 +104,14 @@ class MachineAssignmentCubit extends Cubit<MachineAssignmentState> {
       final filteredList = await _repo.searchHistory(machineId, keyword);
       emit(
         MachineAssignmentLoaded(
-          currentRunning: currentState.currentRunning,
-          history: filteredList, // Hiển thị list tìm kiếm
-          allHistory: currentState.allHistory, // Giữ nguyên list gốc
+          currentRunningLines: currentState.currentRunningLines, // [ĐÃ SỬA]
+          history: filteredList,
+          allHistory: currentState.allHistory,
         ),
       );
     } catch (e) {
       emit(MachineAssignmentError("Lỗi tìm kiếm lịch sử: $e"));
-      await loadMachineData(); // Fallback
+      await loadMachineData();
     }
   }
 
@@ -126,7 +122,7 @@ class MachineAssignmentCubit extends Cubit<MachineAssignmentState> {
     emit(MachineAssignmentLoading());
     try {
       await _repo.updateHistory(historyId, updateData);
-      await loadMachineData(); // Tải lại toàn bộ để cập nhật UI
+      await loadMachineData();
     } catch (e) {
       emit(MachineAssignmentError("Lỗi cập nhật lịch sử: $e"));
       await loadMachineData();
