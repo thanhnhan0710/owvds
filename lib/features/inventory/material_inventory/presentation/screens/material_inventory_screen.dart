@@ -38,6 +38,9 @@ class _MaterialInventoryScreenState extends State<MaterialInventoryScreen> {
   Timer? _debounce;
   int? _selectedWarehouseId;
 
+  // [MỚI] State lọc cục bộ cho Lô đã hết hàng
+  bool _showOutOfStockOnly = false;
+
   @override
   void initState() {
     super.initState();
@@ -319,37 +322,37 @@ class _MaterialInventoryScreenState extends State<MaterialInventoryScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        // [CẬP NHẬT RESPONSIVE]: Dùng Wrap để các bộ lọc rớt dòng đẹp mắt trên Mobile
+                        Wrap(
+                          spacing: 16,
+                          runSpacing: 12,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            Expanded(
-                              flex: isMobile ? 1 : 0,
-                              child: SizedBox(
-                                width: isMobile ? double.infinity : 400,
-                                child: TextField(
-                                  controller: _searchCtrl,
-                                  onChanged: _onSearch,
-                                  decoration: InputDecoration(
-                                    hintText: "Tìm kiếm mã lô, vị trí...",
-                                    prefixIcon: const Icon(
-                                      Icons.search,
-                                      size: 18,
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.white,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      vertical: 0,
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide(
-                                        color: Colors.grey.shade300,
-                                      ),
+                            SizedBox(
+                              width: isMobile ? double.infinity : 400,
+                              child: TextField(
+                                controller: _searchCtrl,
+                                onChanged: _onSearch,
+                                decoration: InputDecoration(
+                                  hintText: "Tìm kiếm mã lô, vị trí...",
+                                  prefixIcon: const Icon(
+                                    Icons.search,
+                                    size: 18,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 0,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color: Colors.grey.shade300,
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 16),
 
                             // BỘ LỌC CẢNH BÁO TỒN KHO TỐI THIỂU
                             BlocBuilder<
@@ -370,27 +373,27 @@ class _MaterialInventoryScreenState extends State<MaterialInventoryScreen> {
                                         ? Icons.warning
                                         : Icons.warning_amber_rounded,
                                     color: isLowStockActive
-                                        ? Colors.red.shade700
-                                        : Colors.red.shade400,
+                                        ? Colors.orange.shade700
+                                        : Colors.orange.shade400,
                                     size: 18,
                                   ),
                                   label: Text(
                                     isMobile ? "Sắp hết" : "Sắp hết hàng",
                                     style: TextStyle(
                                       color: isLowStockActive
-                                          ? Colors.red.shade900
-                                          : Colors.red.shade700,
+                                          ? Colors.orange.shade900
+                                          : Colors.orange.shade700,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   selected: isLowStockActive,
-                                  selectedColor: Colors.red.shade50,
+                                  selectedColor: Colors.orange.shade50,
                                   backgroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                     side: BorderSide(
                                       color: isLowStockActive
-                                          ? Colors.red
+                                          ? Colors.orange
                                           : Colors.grey.shade300,
                                     ),
                                   ),
@@ -400,6 +403,42 @@ class _MaterialInventoryScreenState extends State<MaterialInventoryScreen> {
                                         .toggleLowStockFilter(val);
                                   },
                                 );
+                              },
+                            ),
+
+                            // [MỚI] BỘ LỌC LÔ ĐÃ HẾT HÀNG
+                            FilterChip(
+                              avatar: Icon(
+                                Icons.remove_shopping_cart,
+                                color: _showOutOfStockOnly
+                                    ? Colors.red.shade700
+                                    : Colors.grey.shade500,
+                                size: 18,
+                              ),
+                              label: Text(
+                                "Lô hết hàng",
+                                style: TextStyle(
+                                  color: _showOutOfStockOnly
+                                      ? Colors.red.shade900
+                                      : Colors.grey.shade700,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              selected: _showOutOfStockOnly,
+                              selectedColor: Colors.red.shade50,
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: BorderSide(
+                                  color: _showOutOfStockOnly
+                                      ? Colors.red
+                                      : Colors.grey.shade300,
+                                ),
+                              ),
+                              onSelected: (val) {
+                                setState(() {
+                                  _showOutOfStockOnly = val;
+                                });
                               },
                             ),
                           ],
@@ -524,19 +563,29 @@ class _MaterialInventoryScreenState extends State<MaterialInventoryScreen> {
                             MaterialInventoryState
                           >(
                             builder: (context, state) {
-                              if (state is MaterialInventoryLoading)
+                              if (state is MaterialInventoryLoading) {
                                 return const Center(
                                   child: CircularProgressIndicator(),
                                 );
+                              }
 
                               if (state is MaterialInventoryLoaded) {
+                                // [MỚI] Lọc danh sách theo trạng thái Hết hàng
+                                List<MaterialInventory> displayList =
+                                    state.inventories;
+                                if (_showOutOfStockOnly) {
+                                  displayList = displayList
+                                      .where((i) => i.quantityKg <= 0)
+                                      .toList();
+                                }
+
                                 return Column(
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
                                     // NỘI DUNG DANH SÁCH
                                     Expanded(
-                                      child: state.inventories.isEmpty
+                                      child: displayList.isEmpty
                                           ? Center(
                                               child: Column(
                                                 mainAxisAlignment:
@@ -559,11 +608,9 @@ class _MaterialInventoryScreenState extends State<MaterialInventoryScreen> {
                                               ),
                                             )
                                           : (isMobile
-                                                ? _buildMobileList(
-                                                    state.inventories,
-                                                  )
+                                                ? _buildMobileList(displayList)
                                                 : _buildDesktopTable(
-                                                    state.inventories,
+                                                    displayList,
                                                   )),
                                     ),
 
@@ -644,7 +691,7 @@ class _MaterialInventoryScreenState extends State<MaterialInventoryScreen> {
       child: SingleChildScrollView(
         child: DataTable(
           headingRowColor: WidgetStateProperty.all(Colors.grey.shade50),
-          dataRowMaxHeight: 60,
+          dataRowMaxHeight: 64,
           columns: const [
             DataColumn(
               label: Text(
@@ -692,62 +739,77 @@ class _MaterialInventoryScreenState extends State<MaterialInventoryScreen> {
           rows: inventories.map((inv) {
             final matInfo = _getMaterialInfo(inv.materialId);
             final matCode = matInfo?.materialCode ?? 'ID: ${inv.materialId}';
-            bool isLowStock = false;
 
-            if (matInfo != null && matInfo.minStockLevel > 0) {
+            bool isLowStock = false;
+            bool isOutOfStock = inv.quantityKg <= 0; // [MỚI] Kiểm tra hết hàng
+
+            // Chỉ cảnh báo LowStock nếu chưa OutOfStock
+            if (matInfo != null && matInfo.minStockLevel > 0 && !isOutOfStock) {
               if (inv.quantityKg < matInfo.minStockLevel) {
                 isLowStock = true;
               }
             }
 
             return DataRow(
+              // [MỚI] Đổi màu nền nhẹ nếu hết hàng
+              color: WidgetStateProperty.resolveWith<Color?>((states) {
+                if (isOutOfStock) return Colors.grey.shade100;
+                return null;
+              }),
               cells: [
                 DataCell(
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _getWarehouseName(inv.warehouseId),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                  // [MỚI] Làm mờ nội dung
+                  Opacity(
+                    opacity: isOutOfStock ? 0.5 : 1.0,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _getWarehouseName(inv.warehouseId),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
                         ),
-                      ),
-                      Text(
-                        "Bin: ${inv.location}",
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                DataCell(
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        matCode,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.blue,
-                        ),
-                      ),
-                      if (isLowStock) ...[
-                        const SizedBox(width: 8),
-                        Tooltip(
-                          message:
-                              "Cảnh báo: Dưới mức tồn kho tối thiểu (${matInfo!.minStockLevel} Kg)",
-                          child: const Icon(
-                            Icons.warning_amber_rounded,
-                            color: Colors.red,
-                            size: 18,
+                        Text(
+                          "Bin: ${inv.location}",
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
                           ),
                         ),
                       ],
-                    ],
+                    ),
+                  ),
+                ),
+                DataCell(
+                  Opacity(
+                    opacity: isOutOfStock ? 0.5 : 1.0,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          matCode,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        if (isLowStock) ...[
+                          const SizedBox(width: 8),
+                          Tooltip(
+                            message:
+                                "Cảnh báo: Dưới mức tồn kho tối thiểu (${matInfo!.minStockLevel} Kg)",
+                            child: const Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.orange,
+                              size: 18,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
                 DataCell(
@@ -755,38 +817,77 @@ class _MaterialInventoryScreenState extends State<MaterialInventoryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        inv.batchCode ?? "Batch-${inv.batchId}",
-                        style: TextStyle(
-                          color: Colors.purple.shade700,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
+                      Opacity(
+                        opacity: isOutOfStock ? 0.5 : 1.0,
+                        child: Text(
+                          inv.batchCode ?? "Batch-${inv.batchId}",
+                          style: TextStyle(
+                            color: Colors.purple.shade700,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      Text(
-                        "PO: ${inv.poNumber ?? 'N/A'} | Plt: ${inv.numberOfPallets ?? 0}",
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.blueGrey,
+                      // [MỚI] Hiển thị huy hiệu Đã hết hàng thay vì PO
+                      if (isOutOfStock)
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.red.shade200),
+                          ),
+                          child: const Text(
+                            "Đã hết hàng",
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        )
+                      else
+                        Text(
+                          "PO: ${inv.poNumber ?? 'N/A'} | Plt: ${inv.numberOfPallets ?? 0}",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.blueGrey,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
                 DataCell(
-                  Text(
-                    "${numFmt.format(inv.quantityKg)} Kg",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isLowStock ? Colors.red : Colors.green,
+                  Opacity(
+                    opacity: isOutOfStock ? 0.5 : 1.0,
+                    child: Text(
+                      "${numFmt.format(inv.quantityKg)} Kg",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: isOutOfStock
+                            ? Colors.grey
+                            : (isLowStock ? Colors.orange : Colors.green),
+                      ),
                     ),
                   ),
                 ),
-                DataCell(Text(numFmt.format(inv.quantityCones))),
                 DataCell(
-                  Text(
-                    numFmt.format(inv.reservedQuantityKg),
-                    style: const TextStyle(color: Colors.orange),
+                  Opacity(
+                    opacity: isOutOfStock ? 0.5 : 1.0,
+                    child: Text(numFmt.format(inv.quantityCones)),
+                  ),
+                ),
+                DataCell(
+                  Opacity(
+                    opacity: isOutOfStock ? 0.5 : 1.0,
+                    child: Text(
+                      numFmt.format(inv.reservedQuantityKg),
+                      style: const TextStyle(color: Colors.orange),
+                    ),
                   ),
                 ),
                 DataCell(
@@ -814,202 +915,247 @@ class _MaterialInventoryScreenState extends State<MaterialInventoryScreen> {
         final inv = inventories[index];
         final matInfo = _getMaterialInfo(inv.materialId);
         final matCode = matInfo?.materialCode ?? 'ID: ${inv.materialId}';
-        bool isLowStock = false;
 
-        if (matInfo != null && matInfo.minStockLevel > 0) {
+        bool isLowStock = false;
+        bool isOutOfStock = inv.quantityKg <= 0; // [MỚI] Kiểm tra hết hàng
+
+        if (matInfo != null && matInfo.minStockLevel > 0 && !isOutOfStock) {
           if (inv.quantityKg < matInfo.minStockLevel) {
             isLowStock = true;
           }
         }
 
         return Card(
+          color: isOutOfStock ? Colors.grey.shade50 : Colors.white,
           margin: const EdgeInsets.only(bottom: 12),
-          elevation: 1,
+          elevation: isOutOfStock ? 0 : 1,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
-              color: isLowStock ? Colors.red.shade200 : Colors.grey.shade200,
+              color: isOutOfStock
+                  ? Colors.grey.shade300
+                  : (isLowStock
+                        ? Colors.orange.shade200
+                        : Colors.grey.shade200),
             ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Wrap(
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 6,
-                            children: [
-                              Text(
-                                matCode,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.blue,
-                                ),
-                              ),
-                              if (isLowStock)
-                                const Icon(
-                                  Icons.warning_amber_rounded,
-                                  color: Colors.red,
-                                  size: 18,
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "Kho: ${_getWarehouseName(inv.warehouseId)}",
-                            style: TextStyle(
-                              color: Colors.grey.shade700,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: const Icon(
-                        Icons.edit_note,
-                        color: Colors.blueGrey,
-                        size: 28,
-                      ),
-                      onPressed: () => _openAdjustmentDialog(inv),
-                    ),
-                  ],
-                ),
-                const Divider(height: 24),
-
-                Wrap(
-                  spacing: 24,
-                  runSpacing: 12,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Khả dụng (Kg)",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.blueGrey,
-                          ),
-                        ),
-                        Text(
-                          numFmt.format(inv.quantityKg),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: isLowStock ? Colors.red : Colors.green,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Cuộn",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.blueGrey,
-                          ),
-                        ),
-                        Text(
-                          numFmt.format(inv.quantityCones),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Giữ chỗ",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.blueGrey,
-                          ),
-                        ),
-                        Text(
-                          "${numFmt.format(inv.reservedQuantityKg)} kg",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: Colors.orange,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
+          // [MỚI] Sử dụng Stack để đặt huy hiệu Hết hàng mà không bị làm mờ
+          child: Stack(
+            children: [
+              Opacity(
+                opacity: isOutOfStock ? 0.5 : 1.0, // Làm mờ nội dung bên dưới
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Wrap(
-                        spacing: 16,
-                        runSpacing: 8,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildInfoItem(
-                            Icons.qr_code,
-                            "Lô:",
-                            inv.batchCode ?? inv.batchId.toString(),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Wrap(
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: 6,
+                                  children: [
+                                    Text(
+                                      matCode,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                    if (isLowStock)
+                                      const Icon(
+                                        Icons.warning_amber_rounded,
+                                        color: Colors.orange,
+                                        size: 18,
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "Kho: ${_getWarehouseName(inv.warehouseId)}",
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          _buildInfoItem(
-                            Icons.shopping_cart_outlined,
-                            "PO:",
-                            inv.poNumber ?? 'N/A',
-                          ),
-                          _buildInfoItem(
-                            Icons.place_outlined,
-                            "Vị trí:",
-                            inv.location,
-                          ),
-                          _buildInfoItem(
-                            Icons.inventory_2_outlined,
-                            "Pallet:",
-                            (inv.numberOfPallets ?? 0).toString(),
+                          IconButton(
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            icon: const Icon(
+                              Icons.edit_note,
+                              color: Colors.blueGrey,
+                              size: 28,
+                            ),
+                            onPressed: () => _openAdjustmentDialog(inv),
                           ),
                         ],
                       ),
+                      const Divider(height: 24),
+
+                      Wrap(
+                        spacing: 24,
+                        runSpacing: 12,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Khả dụng (Kg)",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.blueGrey,
+                                ),
+                              ),
+                              Text(
+                                numFmt.format(inv.quantityKg),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: isOutOfStock
+                                      ? Colors.grey.shade600
+                                      : (isLowStock
+                                            ? Colors.orange
+                                            : Colors.green),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Cuộn",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.blueGrey,
+                                ),
+                              ),
+                              Text(
+                                numFmt.format(inv.quantityCones),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Giữ chỗ",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.blueGrey,
+                                ),
+                              ),
+                              Text(
+                                "${numFmt.format(inv.reservedQuantityKg)} kg",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                              spacing: 16,
+                              runSpacing: 8,
+                              children: [
+                                _buildInfoItem(
+                                  Icons.qr_code,
+                                  "Lô:",
+                                  inv.batchCode ?? inv.batchId.toString(),
+                                ),
+                                _buildInfoItem(
+                                  Icons.shopping_cart_outlined,
+                                  "PO:",
+                                  inv.poNumber ?? 'N/A',
+                                ),
+                                _buildInfoItem(
+                                  Icons.place_outlined,
+                                  "Vị trí:",
+                                  inv.location,
+                                ),
+                                _buildInfoItem(
+                                  Icons.inventory_2_outlined,
+                                  "Pallet:",
+                                  (inv.numberOfPallets ?? 0).toString(),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      if (isLowStock) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          "⚠️ Cảnh báo: Số lượng dưới mức tối thiểu (${matInfo!.minStockLevel} Kg)",
+                          style: const TextStyle(
+                            color: Colors.orange,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
+              ),
 
-                if (isLowStock) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    "⚠️ Cảnh báo: Số lượng dưới mức tối thiểu (${matInfo!.minStockLevel} Kg)",
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+              // [MỚI] Huy hiệu Đã hết hàng nổi bật bên trên lớp mờ
+              if (isOutOfStock)
+                Positioned(
+                  top: 12,
+                  right: 48, // Tránh đè lên nút edit
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: const Text(
+                      "Đã hết hàng",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                ],
-              ],
-            ),
+                ),
+            ],
           ),
         );
       },

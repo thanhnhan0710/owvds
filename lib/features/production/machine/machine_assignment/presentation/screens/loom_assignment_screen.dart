@@ -158,8 +158,9 @@ class _LoomAssignmentScreenState extends State<LoomAssignmentScreen> {
                 Expanded(
                   child: BlocBuilder<MachineCubit, MachineState>(
                     builder: (context, state) {
-                      if (state is MachineLoading)
+                      if (state is MachineLoading) {
                         return const Center(child: CircularProgressIndicator());
+                      }
                       if (state is MachineLoaded) {
                         // CHỈ LỌC CÁC MÁY DỆT
                         final weavingMachines = state.allMachines

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:owvds/core/network/api_client.dart'; // Import ApiClient để lấy Base URL
 import 'package:owvds/features/production/loom_state/product/domain/product_model.dart';
 import 'package:owvds/features/production/loom_state/product/presentation/bloc/product_cubit.dart';
 
@@ -40,9 +42,50 @@ class ProductGridView extends StatelessWidget {
     );
   }
 
+  Future<void> _pickAndImportExcel(BuildContext context) async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['xls', 'xlsx'],
+        withData: true,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.first;
+        // ignore: use_build_context_synchronously
+        context.read<ProductCubit>().importExcel(file);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi chọn file: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // [QUAN TRỌNG] Hàm biến đổi URL tương đối thành URL tuyệt đối
+  String _getFullImageUrl(String path) {
+    if (path.isEmpty) return '';
+    if (path.startsWith('http')) return path; // Đã là URL đầy đủ thì giữ nguyên
+
+    // Lấy Base URL từ cấu hình Dio của bạn
+    String baseUrl = ApiClient().dio.options.baseUrl;
+
+    // Xử lý nối chuỗi cho chuẩn (tránh bị dư dấu /)
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.substring(0, baseUrl.length - 1);
+    }
+    if (!path.startsWith('/')) {
+      path = '/$path';
+    }
+
+    return '$baseUrl$path';
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Kiểm tra xem có phải màn hình điện thoại không
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Column(
@@ -80,7 +123,30 @@ class ProductGridView extends StatelessWidget {
               ),
               const SizedBox(width: 12),
 
-              // [SỬA]: Nút Thêm sản phẩm có chứa Text rõ ràng
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.green.shade700,
+                  side: BorderSide(color: Colors.green.shade700),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 12 : 16,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                icon: const Icon(Icons.upload_file, size: 20),
+                label: Text(
+                  isMobile ? 'Nhập' : 'Nhập Excel',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                onPressed: () => _pickAndImportExcel(context),
+              ),
+              const SizedBox(width: 12),
+
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primaryColor,
@@ -95,7 +161,6 @@ class ProductGridView extends StatelessWidget {
                   elevation: 2,
                 ),
                 icon: const Icon(Icons.add, size: 20),
-                // Responsive: Hiện "Thêm" trên mobile để chống tràn, "Thêm sản phẩm" trên màn hình to
                 label: Text(
                   isMobile ? 'Thêm' : 'Thêm sản phẩm',
                   style: const TextStyle(
@@ -152,11 +217,15 @@ class ProductGridView extends StatelessWidget {
 
                 return LayoutBuilder(
                   builder: (context, constraints) {
-                    int crossAxisCount = 2;
-                    if (constraints.maxWidth >= 1000)
+                    // Cấu hình thu nhỏ Card bằng cách tăng số cột
+                    int crossAxisCount = 3;
+                    if (constraints.maxWidth >= 1200) {
+                      crossAxisCount = 6;
+                    } else if (constraints.maxWidth >= 900) {
+                      crossAxisCount = 5;
+                    } else if (constraints.maxWidth >= 600) {
                       crossAxisCount = 4;
-                    else if (constraints.maxWidth >= 600)
-                      crossAxisCount = 3;
+                    }
 
                     return GridView.builder(
                       padding: const EdgeInsets.symmetric(
@@ -165,7 +234,7 @@ class ProductGridView extends StatelessWidget {
                       ),
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: crossAxisCount,
-                        childAspectRatio: 0.75,
+                        childAspectRatio: 0.8, // Tỷ lệ giúp card ngắn lại
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
                       ),
@@ -188,6 +257,9 @@ class ProductGridView extends StatelessWidget {
   Widget _buildProductCard(BuildContext context, Product p) {
     final typeColor = _getColorForType(p.productTypeId);
 
+    // [SỬA]: Gọi hàm ghép chuỗi URL
+    final String fullImageUrl = _getFullImageUrl(p.imageUrl);
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -199,26 +271,26 @@ class ProductGridView extends StatelessWidget {
             child: Container(
               width: double.infinity,
               color: Colors.grey.shade100,
-              child: p.imageUrl.isNotEmpty
+              child: fullImageUrl.isNotEmpty
                   ? Image.network(
-                      p.imageUrl,
+                      fullImageUrl, // [SỬA]: Sử dụng URL tuyệt đối ở đây
                       fit: BoxFit.cover,
                       errorBuilder: (c, e, s) => const Icon(
                         Icons.broken_image,
-                        size: 50,
+                        size: 40,
                         color: Colors.grey,
                       ),
                     )
                   : Icon(
                       Icons.image_not_supported,
-                      size: 50,
+                      size: 40,
                       color: Colors.grey.shade300,
                     ),
             ),
           ),
           Container(height: 4, width: double.infinity, color: typeColor),
           Padding(
-            padding: const EdgeInsets.all(12.0),
+            padding: const EdgeInsets.all(10.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -226,7 +298,7 @@ class ProductGridView extends StatelessWidget {
                   p.itemCode,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -252,11 +324,11 @@ class ProductGridView extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   p.note.isEmpty ? 'Không có ghi chú' : p.note,
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -267,7 +339,10 @@ class ProductGridView extends StatelessWidget {
             children: [
               Expanded(
                 child: TextButton(
-                  style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 36),
+                  ),
                   onPressed: () => showDialog(
                     context: context,
                     builder: (_) => ProductDialog(product: p),
@@ -281,6 +356,7 @@ class ProductGridView extends StatelessWidget {
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.redAccent,
                     padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 36),
                   ),
                   onPressed: () => _confirmDelete(context, p.id, p.itemCode),
                   child: const Text('Xóa', style: TextStyle(fontSize: 12)),

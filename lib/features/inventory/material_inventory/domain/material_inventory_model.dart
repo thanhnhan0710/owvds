@@ -2,6 +2,7 @@ class MaterialInventory {
   final int id;
   final int warehouseId;
   final int materialId;
+  final String? materialCode;
   final int batchId;
 
   final String? batchCode;
@@ -19,6 +20,7 @@ class MaterialInventory {
     required this.id,
     required this.warehouseId,
     required this.materialId,
+    this.materialCode, // [MỚI]
     required this.batchId,
     this.batchCode,
     this.poNumber,
@@ -32,6 +34,10 @@ class MaterialInventory {
   });
 
   factory MaterialInventory.fromJson(Map<String, dynamic> json) {
+    String? matCode;
+    if (json['material'] != null) {
+      matCode = json['material']['material_code'];
+    }
     return MaterialInventory(
       id: json['inventory_id'] ?? 0,
       warehouseId: json['warehouse_id'] ?? 0,

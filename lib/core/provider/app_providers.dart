@@ -2,6 +2,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:owvds/core/bloc/language_cubit.dart';
 import 'package:owvds/features/area/data/area_repository.dart';
 import 'package:owvds/features/area/presentation/bloc/area_cubit.dart';
+import 'package:owvds/features/auth/data/user_repository.dart';
+import 'package:owvds/features/auth/presentation/bloc/user_cubit.dart';
 import 'package:owvds/features/hr/department/data/department_repository.dart';
 import 'package:owvds/features/hr/department/presentation/bloc/department_cubit.dart';
 import 'package:owvds/features/hr/employee/data/employee_repository.dart';
@@ -24,6 +26,8 @@ import 'package:owvds/features/inventory/material/data/material_repository.dart'
 import 'package:owvds/features/inventory/material/presentation/bloc/material_cubit.dart';
 import 'package:owvds/features/inventory/material_batch/data/material_batch_repository.dart';
 import 'package:owvds/features/inventory/material_batch/presentation/bloc/material_batch_cubit.dart';
+import 'package:owvds/features/inventory/material_export/data/material_export_repository.dart';
+import 'package:owvds/features/inventory/material_export/presentation/bloc/material_export_cubit.dart';
 import 'package:owvds/features/inventory/material_inventory/data/material_inventory_repository.dart';
 import 'package:owvds/features/inventory/material_inventory/presentation/bloc/material_inventory_cubit.dart';
 import 'package:owvds/features/inventory/material_receipt/data/material_receipt_repository.dart';
@@ -48,6 +52,10 @@ import 'package:owvds/features/production/machine/machine_status/data/machine_st
 import 'package:owvds/features/production/machine/machine_status/presentation/bloc/machine_status_cubit.dart';
 import 'package:owvds/features/production/machine/machine_type/data/machine_type_repository.dart';
 import 'package:owvds/features/production/machine/machine_type/presentation/bloc/machine_type_cubit.dart';
+import 'package:owvds/features/qc/bom/data/bom_repository.dart';
+import 'package:owvds/features/qc/bom/presentation/bloc/bom_cubit.dart';
+import 'package:owvds/features/qc/loom_state_standard/data/loom_state_standard_repository.dart';
+import 'package:owvds/features/qc/loom_state_standard/presentation/bloc/loom_state_standard_cubit.dart';
 
 class AppProviders {
   // Dùng 'static final' để Dart tự động giữ lại chính xác kiểu dữ liệu thay vì ép về dạng List<dynamic>
@@ -72,6 +80,7 @@ class AppProviders {
     BlocProvider<EmployeeGroupCubit>(
       create: (context) => EmployeeGroupCubit(EmployeeGroupRepository()),
     ),
+    BlocProvider<UserCubit>(create: (context) => UserCubit(UserRepository())),
 
     // Sau này khi thêm các Cubit khác, bạn cũng bắt buộc phải viết rõ tên Cubit trong cặp ngoặc <>.
     // Ví dụ: BlocProvider<DepartmentCubit>(create: (context) => DepartmentCubit()),
@@ -118,6 +127,9 @@ class AppProviders {
     BlocProvider<WarehouseCubit>(
       create: (context) => WarehouseCubit(WarehouseRepository()),
     ),
+    BlocProvider<MaterialExportCubit>(
+      create: (context) => MaterialExportCubit(MaterialExportRepository()),
+    ),
 
     // 4. Production Providers
     BlocProvider<ProductTypeCubit>(
@@ -142,5 +154,11 @@ class AppProviders {
     BlocProvider<GlobalAssignmentCubit>(
       create: (context) => GlobalAssignmentCubit(MachineAssignmentRepository()),
     ),
+
+    //QC
+    BlocProvider<StandardCubit>(
+      create: (context) => StandardCubit(StandardRepository()),
+    ),
+    BlocProvider<BOMCubit>(create: (context) => BOMCubit(BOMRepository())),
   ];
 }

@@ -1,5 +1,8 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:file_picker/file_picker.dart';
+
 import 'package:owvds/features/production/loom_state/product/domain/product_model.dart';
 import 'package:owvds/features/production/loom_state/product/presentation/bloc/product_cubit.dart';
 import 'package:owvds/features/production/loom_state/product_type/domain/product_type_model.dart';
@@ -22,6 +25,10 @@ class _ProductDialogState extends State<ProductDialog> {
   int? _selectedTypeId;
   final Color _primaryColor = const Color(0xFF003366);
 
+  // Biến lưu trữ file ảnh được chọn
+  PlatformFile? _pickedImageFile;
+  Uint8List? _imageBytes;
+
   @override
   void initState() {
     super.initState();
@@ -39,8 +46,46 @@ class _ProductDialogState extends State<ProductDialog> {
   }
 
   @override
+  void dispose() {
+    _codeController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  // Hàm xử lý chọn ảnh
+  Future<void> _pickImage() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true, // Cần thiết để lấy mảng bytes hiển thị trên Web/Desktop
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          _pickedImageFile = result.files.first;
+          _imageBytes = result.files.first.bytes;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error picking image: $e");
+    }
+  }
+
+  // Lấy ImageProvider để hiển thị (Ưu tiên ảnh vừa chọn, sau đó tới ảnh cũ từ API)
+  ImageProvider? _getImageProvider() {
+    if (_imageBytes != null) {
+      return MemoryImage(_imageBytes!);
+    }
+    if (widget.product != null && widget.product!.imageUrl.isNotEmpty) {
+      return NetworkImage(widget.product!.imageUrl);
+    }
+    return null;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isEdit = widget.product != null;
+    final imageProvider = _getImageProvider();
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -56,35 +101,60 @@ class _ProductDialogState extends State<ProductDialog> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Chọn ảnh (Mock UI)
-                Container(
-                  height: 120,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.grey.shade300,
-                      style: BorderStyle.solid,
+                // Khu vực chọn ảnh
+                GestureDetector(
+                  onTap: _pickImage,
+                  child: Container(
+                    height: 150,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.grey.shade300,
+                        style: BorderStyle.solid,
+                      ),
+                      image: imageProvider != null
+                          ? DecorationImage(
+                              image: imageProvider,
+                              fit: BoxFit.cover,
+                            )
+                          : null,
                     ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.add_photo_alternate,
-                        size: 40,
-                        color: Colors.grey.shade400,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Nhấn để tải ảnh lên",
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+                    child: imageProvider == null
+                        ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_photo_alternate,
+                                size: 40,
+                                color: Colors.grey.shade400,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                "Nhấn để tải ảnh lên",
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Align(
+                            alignment: Alignment.topRight,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: CircleAvatar(
+                                backgroundColor: Colors.white.withOpacity(0.8),
+                                radius: 16,
+                                child: Icon(
+                                  Icons.edit,
+                                  size: 16,
+                                  color: _primaryColor,
+                                ),
+                              ),
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -108,7 +178,7 @@ class _ProductDialogState extends State<ProductDialog> {
                     if (state is ProductTypeLoaded) types = state.productTypes;
 
                     return DropdownButtonFormField<int>(
-                      initialValue: _selectedTypeId,
+                      value: _selectedTypeId,
                       decoration: const InputDecoration(
                         labelText: 'Loại sản phẩm',
                         border: OutlineInputBorder(),
@@ -160,11 +230,11 @@ class _ProductDialogState extends State<ProductDialog> {
                     : '', // Giữ lại URL cũ hoặc rỗng
               );
 
-              // Tích hợp FilePicker ở đây nếu upload thực tế
+              // Tích hợp FilePicker đẩy file thực tế xuống Cubit
               context.read<ProductCubit>().saveProduct(
                 product: newProduct,
                 isEdit: isEdit,
-                imageFile: null, // Truyền file thật vào đây
+                imageFile: _pickedImageFile, // Truyền file vừa chọn
               );
               Navigator.pop(context);
             }

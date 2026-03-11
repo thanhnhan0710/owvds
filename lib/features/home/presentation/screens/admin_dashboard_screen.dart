@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:owvds/features/hr/share/presentation/screens/hr_dashboard_screen.dart';
 import 'package:owvds/features/inventory/share/presentation/screens/warehouse_dashboard_screen.dart';
+import 'package:owvds/features/qc/share/presentation/screens/qc_dashboard_screen.dart';
 import 'package:owvds/l10n/app_localizations.dart';
 
 import '../../../../core/widgets/responsive_layout.dart';
@@ -15,7 +16,7 @@ import '../widgets/dashboard_content.dart';
 
 // Import màn hình Production Dashboard
 import '../../../production/share/presentation/screens/production_dashboard.dart';
-// [MỚI] Import màn hình HR Dashboard
+// Import màn hình QC Dashboard (Bạn nhớ kiểm tra lại đường dẫn import này)
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -137,11 +138,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     primaryColor: _primaryColor,
                   ),
                 Expanded(
-                  // [SỬA]: Kiểm tra nếu là các trang có sẵn khung bao (như Dashboard)
-                  // thì không cần bọc thêm padding và SingleChildScrollView để các form bên trong tự xử lý responsive
                   child: Builder(
                     builder: (context) {
-                      // 1. Nếu là trang chủ
+                      // 1. Trang chủ
                       if (currentPath == '/admin-dashboard' ||
                           currentPath == '/dashboard') {
                         return SingleChildScrollView(
@@ -149,26 +148,28 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           child: DashboardContent(primaryColor: _primaryColor),
                         );
                       }
-                      // 2. Nếu là trang Quản lý Sản Xuất (Production Dashboard)
+                      // 2. Production Dashboard
                       else if (currentPath == '/production-dashboard') {
                         return const SingleChildScrollView(
                           padding: EdgeInsets.all(24),
                           child: ProductionDashboard(),
                         );
                       }
-                      // 3. [MỚI] Điều hướng đến trang HR Dashboard
+                      // 3. HR Dashboard
                       else if (currentPath == '/hr-dashboard' ||
                           currentPath == '/hr') {
-                        // Trang HrDashboardScreen đã tự có Scaffold và SingleChildScrollView
-                        // Nên ta trả về thẳng widget này mà không cần bọc gì thêm
                         return const HrDashboardScreen();
                       }
-                      // 4. [MỚI] Điều hướng đến trang Warehouse Dashboard
+                      // 4. Warehouse Dashboard
                       else if (currentPath == '/warehouse-dashboard' ||
                           currentPath == '/warehouse') {
                         return const WarehouseDashboardScreen();
                       }
-                      // 5. Các trang khác chưa có giao diện lồng vào
+                      // 5. QC Dashboard [MỚI]
+                      else if (currentPath == '/qc-dashboard') {
+                        return const QCDashboardScreen();
+                      }
+                      // 6. Các trang khác chưa có giao diện lồng vào
                       else {
                         return SingleChildScrollView(
                           padding: const EdgeInsets.all(24),

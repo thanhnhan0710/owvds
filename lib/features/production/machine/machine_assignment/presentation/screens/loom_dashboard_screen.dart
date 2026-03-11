@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'dart:math'; // Import để dùng hàm max, min
+import 'dart:math';
 import 'package:owvds/core/network/websocket_service.dart';
 import 'package:owvds/core/widgets/responsive_layout.dart';
 import 'package:owvds/features/area/presentation/bloc/area_cubit.dart';
@@ -97,7 +97,7 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
   }
 
   // =========================================================================
-  // Giao diện Card Máy (Đã loại bỏ tham số width cố định từ GridView)
+  // Giao diện Card Máy (Tối ưu Padding và Font cho Mobile siêu nhỏ)
   // =========================================================================
   Widget _buildMachineCard(
     BuildContext context,
@@ -105,6 +105,7 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
     List<MachineProductHistory> runningAssignments,
     double width,
     double height,
+    bool isMobile,
   ) {
     final int totalLines = machine.totalLines ?? 1;
 
@@ -133,10 +134,11 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
           borderRadius: BorderRadius.circular(6),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
             children: [
               // --- HEADER MÁY ---
               Container(
-                height: 26,
+                height: isMobile ? 22 : 26, // Thu nhỏ header trên mobile
                 decoration: const BoxDecoration(
                   color: headerBgColor,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
@@ -145,11 +147,14 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
                   alignment: Alignment.center,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 28),
+                      // Thu hẹp khoảng cách 2 bên để tên máy có nhiều không gian hơn
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile ? 12 : 24,
+                      ),
                       child: Text(
                         machine.machineName,
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: isMobile ? 10 : 12,
                           fontWeight: FontWeight.bold,
                           color: headerTextColor,
                         ),
@@ -157,11 +162,11 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
                         textAlign: TextAlign.center,
                       ),
                     ),
-                    const Positioned(
-                      right: 4,
+                    Positioned(
+                      right: 2,
                       child: Icon(
                         Icons.settings,
-                        size: 14,
+                        size: isMobile ? 12 : 14,
                         color: headerTextColor,
                       ),
                     ),
@@ -172,7 +177,7 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
               // --- BODY (CÁC LINE NẰM NGANG NHAU) ---
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(3),
+                  padding: const EdgeInsets.all(2), // Giảm padding viền ngoài
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: List.generate(totalLines, (index) {
@@ -189,7 +194,6 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
                           ? (assignment?.product?.itemCode ?? 'N/A')
                           : 'Trống';
 
-                      // Lấy màu nền và màu chữ
                       final Color bg = isLineRunning
                           ? const Color(0xFFD6F0FF)
                           : Colors.grey.shade100;
@@ -205,14 +209,15 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
                               color: bg,
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 4,
-                              horizontal: 2,
+                            // Ép padding cực nhỏ trên mobile để chừa chỗ cho text
+                            padding: EdgeInsets.symmetric(
+                              vertical: 2,
+                              horizontal: isMobile ? 1 : 2,
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                // Bảng tên Line nhỏ gọn
+                                // Tên Line
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 4,
@@ -222,12 +227,12 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
                                     color: isLineRunning
                                         ? fg.withOpacity(0.15)
                                         : Colors.grey.shade300,
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: BorderRadius.circular(2),
                                   ),
                                   child: Text(
                                     'L$lineNum',
                                     style: TextStyle(
-                                      fontSize: 10,
+                                      fontSize: isMobile ? 9 : 10,
                                       color: isLineRunning
                                           ? fg
                                           : Colors.grey.shade700,
@@ -235,15 +240,15 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                SizedBox(height: isMobile ? 2 : 4),
 
-                                // Mã Sản Phẩm TO RÕ, ưu tiên không gian
+                                // Mã Sản Phẩm
                                 Expanded(
                                   child: Center(
                                     child: Text(
                                       itemCode,
                                       style: TextStyle(
-                                        fontSize: 12, // Kích thước chữ to
+                                        fontSize: isMobile ? 10 : 12,
                                         color: fg,
                                         fontWeight: FontWeight.w900,
                                         height: 1.1,
@@ -484,14 +489,28 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
                         );
                       }
 
-                      // [CẬP NHẬT QUAN TRỌNG]: TÍNH TOÁN CHIỀU NGANG THEO SỐ LINE
-                      // Khai báo kích thước chuẩn của máy có 2 Line.
-                      final double standardWidthFor2Lines = isMobile
-                          ? 180.0
-                          : 260.0;
-                      // Chiều cao cố định không đổi dù máy có mấy Line
+                      // ==============================================================
+                      // TÍNH TOÁN TOÁN HỌC CHO KÍCH THƯỚC CARD
+                      // ==============================================================
+
+                      // Khoảng cách giữa các card
+                      final double wrapSpacing = isMobile ? 6.0 : 16.0;
+                      // Padding 2 bên của Wrap (8px mỗi bên trên mobile)
+                      final double screenPadding = isMobile ? 16.0 : 32.0;
+
+                      double availableWidth = screenWidth - screenPadding;
+                      if (isDesktop)
+                        availableWidth -=
+                            250; // Trừ hao thanh sidebar bên trái nếu có
+
+                      // TÍNH TOÁN CHUẨN CỦA MÁY 2 LINE:
+                      // Trên Mobile: Muốn hiển thị 3 máy 2 Line trên 1 hàng (3 máy thì có 2 khoảng hở spacing)
+                      double standardWidthFor2Lines = isMobile
+                          ? (availableWidth - (2 * wrapSpacing)) / 3
+                          : 220.0; // Fixed cho desktop
+
+                      // Chiều cao cố định
                       final double fixedHeight = isMobile ? 85.0 : 100.0;
-                      final double wrapSpacing = isMobile ? 8.0 : 16.0;
 
                       return SingleChildScrollView(
                         padding: EdgeInsets.all(isMobile ? 8.0 : 16.0),
@@ -513,20 +532,17 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
                                     )
                                     .toList();
 
-                            // TÍNH TOÁN WIDTH THEO TỶ LỆ (Chuẩn là 2 line)
-                            // 2 line = 1x chuẩn. 4 line = 2x chuẩn. 3 line = 1.5x chuẩn.
+                            // CÔNG THỨC TÍNH CHIỀU RỘNG CHÍNH XÁC THEO SỐ LINE:
+                            // Máy N Line = Kích thước (N/2) máy 2 Line + Khoảng hở mà nó che lấp.
+                            // Ví dụ: Máy 4 Line = 2 * Width(Máy 2 Line) + 1 * Spacing
+                            // Máy 6 Line = 3 * Width(Máy 2 Line) + 2 * Spacing
                             double cardWidth =
-                                (totalLines / 2.0) * standardWidthFor2Lines;
+                                (totalLines / 2.0) * standardWidthFor2Lines +
+                                ((totalLines / 2.0) - 1) * wrapSpacing;
 
-                            // Tránh trường hợp máy 1 line bị quá nhỏ, không thấy được tên máy
-                            double minWidth = isMobile ? 120.0 : 160.0;
-                            cardWidth = max(cardWidth, minWidth);
-
-                            // Tránh trường hợp máy quá nhiều line (ví dụ 8 line) bị tràn màn hình
-                            double maxWidth =
-                                screenWidth - (isMobile ? 16 : 32);
-                            if (isDesktop)
-                              maxWidth -= 250; // Trừ hao thanh sidebar bên trái
+                            // Chống tràn giao diện
+                            double maxWidth = screenWidth - screenPadding;
+                            if (isDesktop) maxWidth -= 250;
                             cardWidth = min(cardWidth, maxWidth);
 
                             return _buildMachineCard(
@@ -535,6 +551,7 @@ class _LoomDashboardScreenState extends State<LoomDashboardScreen> {
                               validAssignments,
                               cardWidth,
                               fixedHeight,
+                              isMobile,
                             );
                           }).toList(),
                         ),

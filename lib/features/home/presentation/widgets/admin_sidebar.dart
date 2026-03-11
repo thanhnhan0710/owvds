@@ -205,17 +205,13 @@ class AdminSidebar extends StatelessWidget {
                     context: context,
                     icon: Icons.precision_manufacturing_rounded,
                     title: l10n.production,
-                    // Bổ sung '/production-dashboard' vào danh sách active
                     childrenRoutes: [
                       '/production-dashboard',
                       '/machines',
                       '/baskets',
                       '/machine-operation',
-                      '/boms',
-                      '/standards',
                     ],
                     children: [
-                      // Nút trỏ về màn hình Production Dashboard
                       _buildSubMenuItem(
                         Icons.dashboard_customize,
                         "Bảng ĐK Sản xuất",
@@ -239,12 +235,19 @@ class AdminSidebar extends StatelessWidget {
                     ],
                   ),
 
+                  // [MỚI] QUALITY CONTROL (QC) GROUP
+                  _buildSectionDivider('QUALITY CONTROL'),
                   _buildExpansionGroup(
                     context: context,
                     icon: Icons.verified_rounded,
-                    title: "QC / Standards",
-                    childrenRoutes: ['/boms', '/standards'],
+                    title: "Quản lý Chất lượng",
+                    childrenRoutes: ['/qc-dashboard', '/boms', '/standards'],
                     children: [
+                      _buildSubMenuItem(
+                        Icons.dashboard_customize,
+                        "Tổng quan QC",
+                        '/qc-dashboard',
+                      ),
                       _buildSubMenuItem(
                         Icons.account_tree,
                         l10n.bomTitle,
@@ -264,14 +267,13 @@ class AdminSidebar extends StatelessWidget {
                     icon: Icons.people_alt_rounded,
                     title: l10n.hr,
                     childrenRoutes: [
-                      '/hr-dashboard', // [MỚI] Thêm đường dẫn cho HR Dashboard
+                      '/hr-dashboard',
                       '/departments',
                       '/employees',
                       '/shifts',
                       '/schedules',
                     ],
                     children: [
-                      // [MỚI] Nút trỏ về màn hình HR Dashboard
                       _buildSubMenuItem(
                         Icons.dashboard_customize,
                         "Tổng quan Nhân sự",
