@@ -24,6 +24,8 @@ class _BasketScreenState extends State<BasketScreen> {
   final Color _accentColor = const Color(0xFF5D4037);
   final Color _bgLight = const Color(0xFFF5F7FA);
 
+  int _rowsPerPage = 20; // [MỚI] Khai báo biến state để quản lý phân trang
+
   @override
   void initState() {
     super.initState();
@@ -38,8 +40,6 @@ class _BasketScreenState extends State<BasketScreen> {
   void dispose() {
     _debounce?.cancel();
     _searchController.dispose();
-
-    // Hủy lắng nghe WebSocket khi đóng màn hình
     WebSocketService().removeListener(_onWebSocketMessage);
     super.dispose();
   }
@@ -151,7 +151,7 @@ class _BasketScreenState extends State<BasketScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // --- HEADER SECTION ---
+              // --- HEADER SECTION MỚI LÀM ĐẸP ---
               Container(
                 color: Colors.white,
                 padding: const EdgeInsets.symmetric(
@@ -159,46 +159,68 @@ class _BasketScreenState extends State<BasketScreen> {
                   vertical: 20,
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.orange.shade50,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
-                            Icons.shopping_basket,
+                            Icons.shopping_basket_rounded,
                             color: Colors.orange.shade800,
-                            size: 24,
+                            size: 28,
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: Text(
-                            "Quản lý Rổ / Trục",
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey.shade800,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Quản lý Rổ / Trục",
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey.shade800,
+                                ),
+                              ),
+                              Text(
+                                "Quản lý danh sách, khối lượng và trạng thái rổ",
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         if (isDesktop) ...[
                           OutlinedButton.icon(
                             onPressed: _onImportExcelPressed,
-                            icon: const Icon(Icons.upload_file, size: 18),
-                            label: const Text('IMPORT EXCEL'),
+                            icon: Icon(
+                              Icons.upload_file,
+                              size: 18,
+                              color: Colors.green.shade700,
+                            ),
+                            label: Text(
+                              'Nhập Excel',
+                              style: TextStyle(
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: _primaryColor,
-                              side: BorderSide(color: _primaryColor),
+                              side: BorderSide(color: Colors.green.shade300),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 20,
                                 vertical: 16,
                               ),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(10),
                               ),
                             ),
                           ),
@@ -206,7 +228,7 @@ class _BasketScreenState extends State<BasketScreen> {
                           ElevatedButton.icon(
                             onPressed: () => _showEditDialog(context, null),
                             icon: const Icon(Icons.add, size: 18),
-                            label: const Text("THÊM RỔ"),
+                            label: const Text("Thêm Rổ Mới"),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _primaryColor,
                               foregroundColor: Colors.white,
@@ -214,9 +236,9 @@ class _BasketScreenState extends State<BasketScreen> {
                                 horizontal: 20,
                                 vertical: 16,
                               ),
-                              elevation: 2,
+                              elevation: 0,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(10),
                               ),
                             ),
                           ),
@@ -224,13 +246,13 @@ class _BasketScreenState extends State<BasketScreen> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    // --- SEARCH BAR ---
+                    // --- SEARCH BAR & STATS ---
                     Row(
                       children: [
                         if (isDesktop) ...[
                           _buildStatBadge(
-                            Icons.grid_view,
-                            "Tổng rổ",
+                            Icons.grid_view_rounded,
+                            "Tổng số rổ",
                             "$total",
                             Colors.blue,
                           ),
@@ -243,7 +265,7 @@ class _BasketScreenState extends State<BasketScreen> {
                             width: isDesktop ? 350 : double.infinity,
                             decoration: BoxDecoration(
                               color: _bgLight,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(10),
                               border: Border.all(color: Colors.grey.shade200),
                             ),
                             child: TextField(
@@ -251,7 +273,7 @@ class _BasketScreenState extends State<BasketScreen> {
                               textInputAction: TextInputAction.search,
                               onChanged: _onSearchChanged,
                               decoration: InputDecoration(
-                                hintText: "Tìm mã rổ...",
+                                hintText: "Tìm mã rổ, ghi chú...",
                                 prefixIcon: Icon(
                                   Icons.search,
                                   color: Colors.grey.shade500,
@@ -302,13 +324,16 @@ class _BasketScreenState extends State<BasketScreen> {
                             children: [
                               Icon(
                                 Icons.shopping_basket_outlined,
-                                size: 60,
+                                size: 80,
                                 color: Colors.grey.shade300,
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                "Chưa có rổ nào",
-                                style: TextStyle(color: Colors.grey.shade500),
+                                "Không tìm thấy dữ liệu rổ nào.",
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 16,
+                                ),
                               ),
                             ],
                           ),
@@ -328,7 +353,7 @@ class _BasketScreenState extends State<BasketScreen> {
       ),
       floatingActionButton: !isDesktop
           ? FloatingActionButton(
-              backgroundColor: _accentColor,
+              backgroundColor: _primaryColor,
               onPressed: () => _showEditDialog(context, null),
               child: const Icon(Icons.add, color: Colors.white),
             )
@@ -336,94 +361,64 @@ class _BasketScreenState extends State<BasketScreen> {
     );
   }
 
-  // --- DESKTOP TABLE ---
+  // --- DESKTOP TABLE (PAGINATED) ---
   Widget _buildDesktopTable(BuildContext context, List<Basket> items) {
+    final dataSource = BasketDataSource(
+      baskets: items,
+      onEdit: (item) => _showEditDialog(context, item),
+      onDelete: (item) => _confirmDelete(context, item),
+      buildStatusBadge: _buildStatusBadge,
+    );
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
-      child: SizedBox(
-        width: double.infinity,
-        child: Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey.shade200),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Theme(
+          data: Theme.of(context).copyWith(
+            cardColor: Colors.white,
+            dividerColor: Colors.grey.shade200,
           ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                  child: DataTable(
-                    headingRowColor: MaterialStateProperty.all(
-                      const Color(0xFFF9FAFB),
-                    ),
-                    horizontalMargin: 24,
-                    columnSpacing: 30,
-                    dataRowMinHeight: 60,
-                    columns: [
-                      DataColumn(label: Text("MÃ RỔ", style: _headerStyle)),
-                      DataColumn(
-                        label: Text("TRỌNG LƯỢNG (kg)", style: _headerStyle),
-                        numeric: true,
-                      ),
-                      DataColumn(
-                        label: Text("TRẠNG THÁI", style: _headerStyle),
-                      ),
-                      DataColumn(label: Text("GHI CHÚ", style: _headerStyle)),
-                      DataColumn(label: Text("HÀNH ĐỘNG", style: _headerStyle)),
-                    ],
-                    rows: items.map((item) {
-                      return DataRow(
-                        cells: [
-                          DataCell(
-                            Text(
-                              item.code,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          DataCell(Text(item.tareWeight.toStringAsFixed(1))),
-                          DataCell(_buildStatusBadge(item.status)),
-                          DataCell(
-                            Text(
-                              item.note,
-                              style: TextStyle(color: Colors.grey.shade600),
-                            ),
-                          ),
-                          DataCell(
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.edit,
-                                    color: Colors.blue,
-                                    size: 20,
-                                  ),
-                                  onPressed: () =>
-                                      _showEditDialog(context, item),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
-                                    size: 20,
-                                  ),
-                                  onPressed: () =>
-                                      _confirmDelete(context, item),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                  ),
-                ),
-              );
+          child: PaginatedDataTable(
+            header: const Text(
+              "Danh sách Rổ/Trục",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            columns: [
+              DataColumn(label: Text("MÃ RỔ", style: _headerStyle)),
+              DataColumn(label: Text("TRỌNG LƯỢNG TỊNH", style: _headerStyle)),
+              DataColumn(label: Text("TRẠNG THÁI", style: _headerStyle)),
+              DataColumn(label: Text("GHI CHÚ", style: _headerStyle)),
+              DataColumn(label: Text("HÀNH ĐỘNG", style: _headerStyle)),
+            ],
+            source: dataSource,
+            // [ĐÃ SỬA LỖI ASSERTION FAILED TẠI ĐÂY]
+            rowsPerPage: _rowsPerPage,
+            availableRowsPerPage: const [10, 20, 50, 100],
+            onRowsPerPageChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  _rowsPerPage = value;
+                });
+              }
             },
+            showCheckboxColumn: false,
+            dataRowMinHeight: 60,
+            dataRowMaxHeight: 60,
+            columnSpacing: 40,
+            horizontalMargin: 24,
           ),
         ),
       ),
@@ -438,60 +433,111 @@ class _BasketScreenState extends State<BasketScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final item = items[index];
-        return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey.shade200),
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 8,
-            ),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  item.code,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                _buildStatusBadge(item.status),
-              ],
-            ),
-            subtitle: Column(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 8),
-                Text(
-                  "TL: ${item.tareWeight.toStringAsFixed(1)} kg",
-                  style: TextStyle(color: Colors.grey.shade800),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.shopping_basket_rounded,
+                          color: Colors.orange.shade700,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          item.code,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                    _buildStatusBadge(item.status),
+                  ],
                 ),
-                if (item.note.isNotEmpty)
-                  Text(
-                    "Note: ${item.note}",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                      fontStyle: FontStyle.italic,
+                const Divider(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Trọng lượng tĩnh",
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "${item.tareWeight.toStringAsFixed(1)} kg",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.edit_note_rounded,
+                            color: Colors.blue,
+                          ),
+                          onPressed: () => _showEditDialog(context, item),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline_rounded,
+                            color: Colors.red,
+                          ),
+                          onPressed: () => _confirmDelete(context, item),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                if (item.note.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      "Ghi chú: ${item.note}",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade700,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ),
-              ],
-            ),
-            trailing: PopupMenuButton(
-              onSelected: (val) {
-                if (val == 'edit') _showEditDialog(context, item);
-                if (val == 'delete') _confirmDelete(context, item);
-              },
-              itemBuilder: (ctx) => [
-                const PopupMenuItem(value: 'edit', child: Text("Sửa")),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Text("Xóa", style: TextStyle(color: Colors.red)),
-                ),
+                ],
               ],
             ),
           ),
@@ -500,42 +546,43 @@ class _BasketScreenState extends State<BasketScreen> {
     );
   }
 
+  // Widget Badge trạng thái
   Widget _buildStatusBadge(String status) {
     Color bg, text;
     switch (status) {
       case 'READY':
         bg = Colors.green.shade50;
-        text = Colors.green;
+        text = Colors.green.shade700;
         break;
       case 'IN_USE':
         bg = Colors.blue.shade50;
-        text = Colors.blue;
+        text = Colors.blue.shade700;
         break;
       case 'HOLDING':
         bg = Colors.orange.shade50;
-        text = Colors.orange;
+        text = Colors.orange.shade700;
         break;
       case 'DAMAGED':
         bg = Colors.red.shade50;
-        text = Colors.red;
+        text = Colors.red.shade700;
         break;
       default:
         bg = Colors.grey.shade100;
-        text = Colors.grey;
+        text = Colors.grey.shade700;
         break;
     }
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: text.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: text.withOpacity(0.2)),
       ),
       child: Text(
         status,
         style: TextStyle(
           color: text,
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -558,7 +605,7 @@ class _BasketScreenState extends State<BasketScreen> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          item == null ? "Thêm Rổ mới" : "Sửa Rổ",
+          item == null ? "Thêm Rổ mới" : "Sửa thông tin Rổ",
           style: TextStyle(color: _primaryColor, fontWeight: FontWeight.bold),
         ),
         content: Form(
@@ -569,9 +616,12 @@ class _BasketScreenState extends State<BasketScreen> {
               children: [
                 TextFormField(
                   controller: codeCtrl,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: "Mã Rổ *",
-                    border: OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    isDense: true,
                   ),
                   validator: (v) =>
                       v == null || v.trim().isEmpty ? "Bắt buộc nhập" : null,
@@ -582,24 +632,29 @@ class _BasketScreenState extends State<BasketScreen> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: "Trọng lượng (kg) *",
-                    border: OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    isDense: true,
                   ),
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) return "Bắt buộc nhập";
-                    if (double.tryParse(v) == null) {
+                    if (double.tryParse(v) == null)
                       return "Vui lòng nhập số hợp lệ";
-                    }
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: selectedStatus,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: "Trạng thái",
-                    border: OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    isDense: true,
                   ),
                   items: ['READY', 'IN_USE', 'HOLDING', 'DAMAGED']
                       .map((e) => DropdownMenuItem(value: e, child: Text(e)))
@@ -609,9 +664,12 @@ class _BasketScreenState extends State<BasketScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: noteCtrl,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: "Ghi chú",
-                    border: OutlineInputBorder(),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    isDense: true,
                   ),
                   maxLines: 2,
                 ),
@@ -644,8 +702,11 @@ class _BasketScreenState extends State<BasketScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryColor,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-            child: const Text("Lưu"),
+            child: Text(item == null ? "Tạo mới" : "Lưu thay đổi"),
           ),
         ],
       ),
@@ -693,28 +754,28 @@ class _BasketScreenState extends State<BasketScreen> {
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 10),
+          Icon(icon, size: 24, color: color),
+          const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
               Text(
                 value,
                 style: TextStyle(
                   color: color,
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 16,
                 ),
               ),
             ],
@@ -725,9 +786,103 @@ class _BasketScreenState extends State<BasketScreen> {
   }
 
   TextStyle get _headerStyle => TextStyle(
-    color: Colors.grey.shade600,
+    color: Colors.grey.shade500,
     fontWeight: FontWeight.bold,
     fontSize: 12,
     letterSpacing: 0.5,
   );
+}
+
+// =========================================================================
+// DATASOURCE CHO PAGINATED DATA TABLE
+// =========================================================================
+class BasketDataSource extends DataTableSource {
+  final List<Basket> baskets;
+  final Function(Basket) onEdit;
+  final Function(Basket) onDelete;
+  final Widget Function(String) buildStatusBadge;
+
+  BasketDataSource({
+    required this.baskets,
+    required this.onEdit,
+    required this.onDelete,
+    required this.buildStatusBadge,
+  });
+
+  @override
+  DataRow? getRow(int index) {
+    if (index >= baskets.length) return null;
+    final item = baskets[index];
+
+    return DataRow(
+      cells: [
+        DataCell(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.orange.shade200),
+            ),
+            child: Text(
+              item.code,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.orange.shade900,
+              ),
+            ),
+          ),
+        ),
+        DataCell(
+          Text(
+            "${item.tareWeight.toStringAsFixed(1)} kg",
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+        DataCell(buildStatusBadge(item.status)),
+        DataCell(
+          Text(
+            item.note.isEmpty ? "-" : item.note,
+            style: TextStyle(
+              color: item.note.isEmpty ? Colors.grey : Colors.black87,
+            ),
+          ),
+        ),
+        DataCell(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.edit_note_rounded,
+                  color: Colors.blue,
+                  size: 22,
+                ),
+                tooltip: "Sửa",
+                onPressed: () => onEdit(item),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Colors.red,
+                  size: 22,
+                ),
+                tooltip: "Xóa",
+                onPressed: () => onDelete(item),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get rowCount => baskets.length;
+
+  @override
+  int get selectedRowCount => 0;
 }

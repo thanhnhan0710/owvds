@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:owvds/core/network/api_client.dart';
+import 'package:owvds/features/production/machine/machine_log/domain/machine_log_model.dart';
 import '../domain/machine_model.dart';
 
 class MachineRepository {
@@ -33,6 +35,40 @@ class MachineRepository {
       await _dio.put('/api/v1/machines/${item.id}', data: item.toJson());
   Future<void> deleteMachine(int id) async =>
       await _dio.delete('/api/v1/machines/$id');
+
+  /// Cập nhật trạng thái máy, kèm lý do và ảnh minh chứng (tuỳ chọn).
+  Future<void> updateMachineStatus(
+    int machineId,
+    String status, {
+    String? reason,
+    File? imageFile,
+  }) async {
+    if (imageFile != null) {
+      final formData = FormData.fromMap({
+        'status': status,
+        'reason': ?reason,
+        'image': await MultipartFile.fromFile(
+          imageFile.path,
+          filename: imageFile.path.split('/').last,
+        ),
+      });
+      await _dio.patch('/api/v1/machines/$machineId/status', data: formData);
+    } else {
+      await _dio.patch(
+        '/api/v1/machines/$machineId/status',
+        data: {'status': status, 'reason': ?reason},
+      );
+    }
+  }
+
+  /// Lấy lịch sử trạng thái của một máy theo [machineId].
+  Future<List<MachineLog>> getMachineHistory(int machineId) async {
+    final response = await _dio.get(
+      '/api/v1/machines/$machineId/logs',
+      queryParameters: {'skip': 0, 'limit': 100},
+    );
+    return (response.data as List).map((e) => MachineLog.fromJson(e)).toList();
+  }
 
   // Import / Export
   Future<Map<String, dynamic>> importExcel(PlatformFile file) async {

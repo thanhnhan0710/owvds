@@ -65,7 +65,6 @@ class Machine {
       maxTemperature: json['max_temperature'] != null
           ? (json['max_temperature'] as num).toDouble()
           : null,
-
       machineType: json['machine_type'] != null
           ? MachineType.fromJson(json['machine_type'])
           : null,
@@ -73,6 +72,56 @@ class Machine {
           ? MachineStatus.fromJson(json['status'])
           : null,
       area: json['area'] != null ? Area.fromJson(json['area']) : null,
+    );
+  }
+
+  /// Tạo bản sao với một số field được thay đổi.
+  /// [statusName]: chuỗi tên trạng thái dùng cho optimistic update
+  /// (tạo MachineStatus tạm thời để hiển thị ngay trên UI trước khi reload).
+  Machine copyWith({
+    int? id,
+    String? machineName,
+    String? serialNumber,
+    int? machineTypeId,
+    int? statusId,
+    int? areaId,
+    String? polymorphicType,
+    int? totalLines,
+    int? speed,
+    String? purpose,
+    double? capacityKg,
+    double? maxTemperature,
+    MachineType? machineType,
+    MachineStatus? status,
+    String? statusName, // Tiện ích để optimistic update bằng tên chuỗi
+    Area? area,
+  }) {
+    // Nếu chỉ truyền statusName mà không truyền status object,
+    // tạo một MachineStatus tạm thời để hiển thị ngay trên UI.
+    MachineStatus? resolvedStatus = status ?? this.status;
+    if (statusName != null && status == null) {
+      resolvedStatus = MachineStatus.fromJson({
+        'status_id': this.statusId ?? 0,
+        'status_name': statusName,
+      });
+    }
+
+    return Machine(
+      id: id ?? this.id,
+      machineName: machineName ?? this.machineName,
+      serialNumber: serialNumber ?? this.serialNumber,
+      machineTypeId: machineTypeId ?? this.machineTypeId,
+      statusId: statusId ?? this.statusId,
+      areaId: areaId ?? this.areaId,
+      polymorphicType: polymorphicType ?? this.polymorphicType,
+      totalLines: totalLines ?? this.totalLines,
+      speed: speed ?? this.speed,
+      purpose: purpose ?? this.purpose,
+      capacityKg: capacityKg ?? this.capacityKg,
+      maxTemperature: maxTemperature ?? this.maxTemperature,
+      machineType: machineType ?? this.machineType,
+      status: resolvedStatus,
+      area: area ?? this.area,
     );
   }
 

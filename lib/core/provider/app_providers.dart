@@ -40,6 +40,8 @@ import 'package:owvds/features/inventory/supplier_category/data/supplier_categor
 import 'package:owvds/features/inventory/supplier_category/presentation/bloc/supplier_category_cubit.dart';
 import 'package:owvds/features/inventory/warehouse/data/warehouse_repository.dart';
 import 'package:owvds/features/inventory/warehouse/presentation/bloc/warehouse_cubit.dart';
+import 'package:owvds/features/production/basket/data/baket_repository.dart';
+import 'package:owvds/features/production/basket/presentation/bloc/baket_cubit.dart';
 import 'package:owvds/features/production/loom_state/product/data/product_repository.dart';
 import 'package:owvds/features/production/loom_state/product/presentation/bloc/product_cubit.dart';
 import 'package:owvds/features/production/loom_state/product_type/data/product_type_repository.dart';
@@ -52,6 +54,11 @@ import 'package:owvds/features/production/machine/machine_status/data/machine_st
 import 'package:owvds/features/production/machine/machine_status/presentation/bloc/machine_status_cubit.dart';
 import 'package:owvds/features/production/machine/machine_type/data/machine_type_repository.dart';
 import 'package:owvds/features/production/machine/machine_type/presentation/bloc/machine_type_cubit.dart';
+import 'package:owvds/features/production/weaving/data/weaving_repository.dart';
+import 'package:owvds/features/production/weaving/presentation/bloc/weaving_cubit.dart';
+import 'package:owvds/features/production/weaving_opperation/presentation/bloc/machine_operation_cubit.dart';
+import 'package:owvds/features/production/weaving_record/data/weaving_record_repository.dart';
+import 'package:owvds/features/production/weaving_record/presentation/bloc/weaving_record_cubit.dart';
 import 'package:owvds/features/qc/bom/data/bom_repository.dart';
 import 'package:owvds/features/qc/bom/presentation/bloc/bom_cubit.dart';
 import 'package:owvds/features/qc/loom_state_standard/data/loom_state_standard_repository.dart';
@@ -153,6 +160,23 @@ class AppProviders {
 
     BlocProvider<GlobalAssignmentCubit>(
       create: (context) => GlobalAssignmentCubit(MachineAssignmentRepository()),
+    ),
+
+    BlocProvider<BasketCubit>(
+      create: (context) => BasketCubit(BasketRepository()),
+    ),
+    BlocProvider<MachineOperationCubit>(
+      create: (context) => MachineOperationCubit(
+        MachineRepository(),
+        WeavingRepository(),
+        BasketRepository(),
+      ),
+    ),
+    BlocProvider<WeavingCubit>(
+      create: (context) => WeavingCubit(WeavingRepository()),
+    ),
+    BlocProvider<WeavingRecordCubit>(
+      create: (context) => WeavingRecordCubit(WeavingRecordRepository()),
     ),
 
     //QC

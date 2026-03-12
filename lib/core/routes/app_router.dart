@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:owvds/core/routes/go_router_refresh_stream.dart';
 import 'package:owvds/features/auth/presentation/bloc/auth_cubit.dart';
 import 'package:owvds/features/auth/presentation/screens/login_screen.dart';
+import 'package:owvds/features/auth/presentation/screens/user_screen.dart';
 import 'package:owvds/features/home/presentation/screens/admin_dashboard_screen.dart';
 import 'package:owvds/features/hr/department/presentation/screens/department_screen.dart';
 import 'package:owvds/features/hr/employee/presentation/screens/employee_screen.dart';
@@ -14,9 +15,11 @@ import 'package:owvds/features/inventory/material_inventory/presentation/screens
 import 'package:owvds/features/inventory/material_receipt/presentation/screens/material_receipt_screen.dart';
 import 'package:owvds/features/inventory/share/presentation/screens/warehouse_dashboard_screen.dart';
 import 'package:owvds/features/inventory/supplier/presentation/screens/supplier_management_screen.dart';
+import 'package:owvds/features/production/basket/presentation/screens/baket_screen.dart';
 import 'package:owvds/features/production/loom_state/presentation/screens/semi_finished_screen.dart';
 import 'package:owvds/features/production/machine/machine_assignment/presentation/screens/loom_dashboard_screen.dart';
 import 'package:owvds/features/production/machine/presentation/screens/macine_management_screen.dart';
+import 'package:owvds/features/production/weaving_opperation/presentation/screens/machine_operation_screen.dart';
 import 'package:owvds/features/qc/bom/presentation/screens/bom_screen.dart';
 import 'package:owvds/features/qc/loom_state_standard/presentation/screens/loom_state_standard_screen.dart';
 import 'package:owvds/features/qc/share/presentation/screens/qc_dashboard_screen.dart';
@@ -52,6 +55,10 @@ class AppRouter {
         GoRoute(
           path: '/admin-dashboard',
           builder: (context, state) => const AdminDashboardScreen(),
+        ),
+        GoRoute(
+          path: '/users',
+          builder: (context, state) => const UserScreen(),
         ),
 
         // HR
@@ -128,6 +135,14 @@ class AppRouter {
         GoRoute(
           path: '/loom-dashboard',
           builder: (context, state) => const LoomDashboardScreen(),
+        ),
+        GoRoute(
+          path: '/baskets',
+          builder: (context, state) => const BasketScreen(),
+        ),
+        GoRoute(
+          path: '/machine-operations',
+          builder: (context, state) => const MachineOperationScreen(),
         ),
 
         //QC

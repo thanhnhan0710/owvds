@@ -73,7 +73,21 @@ class MaterialExportRepository {
     await _dio.delete('$_basePath/$id');
   }
 
-  // 7. Xuất Excel
+  // 7. Lấy danh sách batch đang hoạt động trên máy (dùng cho tạo phiếu dệt)
+  Future<List<ActiveBatchOnMachine>> getActiveBatchesOnMachine(
+    int machineId,
+    int productId,
+  ) async {
+    final response = await _dio.get(
+      '$_basePath/active-batches-on-machine',
+      queryParameters: {'machine_id': machineId, 'product_id': productId},
+    );
+    return (response.data as List)
+        .map((json) => ActiveBatchOnMachine.fromJson(json))
+        .toList();
+  }
+
+  // 8. Xuất Excel
   Future<Uint8List> exportExcel({
     String? search,
     int? warehouseId,

@@ -71,10 +71,12 @@ class MachineAssignmentRepository {
   }) async {
     final queryParams = <String, dynamic>{'skip': skip, 'limit': limit};
 
-    if (startDate != null && startDate.isNotEmpty)
+    if (startDate != null && startDate.isNotEmpty) {
       queryParams['start_date'] = startDate;
-    if (endDate != null && endDate.isNotEmpty)
+    }
+    if (endDate != null && endDate.isNotEmpty) {
       queryParams['end_date'] = endDate;
+    }
 
     final response = await _dio.get(
       '/api/v1/machine-assignments/$machineId/history',
@@ -96,10 +98,12 @@ class MachineAssignmentRepository {
     final queryParams = <String, dynamic>{'skip': skip, 'limit': limit};
 
     if (keyword != null && keyword.isNotEmpty) queryParams['keyword'] = keyword;
-    if (startDate != null && startDate.isNotEmpty)
+    if (startDate != null && startDate.isNotEmpty) {
       queryParams['start_date'] = startDate;
-    if (endDate != null && endDate.isNotEmpty)
+    }
+    if (endDate != null && endDate.isNotEmpty) {
       queryParams['end_date'] = endDate;
+    }
 
     final response = await _dio.get(
       '/api/v1/machine-assignments/history/all/global',
@@ -149,10 +153,12 @@ class MachineAssignmentRepository {
     final queryParams = <String, dynamic>{};
 
     if (keyword != null && keyword.isNotEmpty) queryParams['keyword'] = keyword;
-    if (startDate != null && startDate.isNotEmpty)
+    if (startDate != null && startDate.isNotEmpty) {
       queryParams['start_date'] = startDate;
-    if (endDate != null && endDate.isNotEmpty)
+    }
+    if (endDate != null && endDate.isNotEmpty) {
       queryParams['end_date'] = endDate;
+    }
 
     final response = await _dio.get(
       '/api/v1/machine-assignments/export/global',
@@ -170,10 +176,12 @@ class MachineAssignmentRepository {
   }) async {
     final queryParams = <String, dynamic>{};
 
-    if (startDate != null && startDate.isNotEmpty)
+    if (startDate != null && startDate.isNotEmpty) {
       queryParams['start_date'] = startDate;
-    if (endDate != null && endDate.isNotEmpty)
+    }
+    if (endDate != null && endDate.isNotEmpty) {
       queryParams['end_date'] = endDate;
+    }
 
     final response = await _dio.get(
       '/api/v1/machine-assignments/export/$machineId',

@@ -156,7 +156,7 @@ class _ProductionDashboardState extends State<ProductionDashboard> {
             'title': 'Quy trình Dệt',
             'icon': Icons.waves,
             'color': Colors.blue,
-            'route': '/machine-operation',
+            'route': '/machine-operations',
           },
           {
             'title': 'Quy trình Nhuộm',

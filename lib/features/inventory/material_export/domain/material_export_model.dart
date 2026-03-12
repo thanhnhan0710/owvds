@@ -1,6 +1,30 @@
 // ==========================================
 // CÁC CLASS PHỤ TRỢ (SIMPLE INFO)
 // ==========================================
+
+// Model cho batch đang hoạt động trên máy (dùng khi tạo phiếu dệt)
+class ActiveBatchOnMachine {
+  final int batchId;
+  final String batchCode;
+  final double quantityKg;
+  final String? yarnRole; // componentType: 'WARP' / 'WEFT' / ...
+
+  ActiveBatchOnMachine({
+    required this.batchId,
+    required this.batchCode,
+    required this.quantityKg,
+    this.yarnRole,
+  });
+
+  factory ActiveBatchOnMachine.fromJson(Map<String, dynamic> json) =>
+      ActiveBatchOnMachine(
+        batchId: json['batch_id'] ?? 0,
+        batchCode: json['batch_code'] ?? '',
+        quantityKg: (json['quantity_kg'] ?? 0).toDouble(),
+        yarnRole: json['yarn_role'] ?? json['component_type'],
+      );
+}
+
 class SimpleWarehouse {
   final int warehouseId;
   final String? name;
