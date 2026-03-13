@@ -181,7 +181,7 @@ class _BasketScreenState extends State<BasketScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Quản lý Rổ / Trục",
+                                "Quản lý Rổ",
                                 style: TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,

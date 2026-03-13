@@ -21,6 +21,14 @@ class MachineRepository {
     return (response.data as List).map((e) => Machine.fromJson(e)).toList();
   }
 
+  // ===========================================================================
+  // [HÀM MỚI]: Kéo danh sách trạng thái của từng Line từ Database
+  // ===========================================================================
+  Future<Map<String, String>> getActiveLineStatuses() async {
+    final response = await _dio.get('/api/v1/machines/lines/active-statuses');
+    return Map<String, String>.from(response.data);
+  }
+
   Future<List<Machine>> searchMachines(String keyword) async {
     final response = await _dio.get(
       '/api/v1/machines/search',
@@ -31,22 +39,31 @@ class MachineRepository {
 
   Future<void> createMachine(Machine item) async =>
       await _dio.post('/api/v1/machines/', data: item.toJson());
+
   Future<void> updateMachine(Machine item) async =>
       await _dio.put('/api/v1/machines/${item.id}', data: item.toJson());
+
   Future<void> deleteMachine(int id) async =>
       await _dio.delete('/api/v1/machines/$id');
 
-  /// Cập nhật trạng thái máy, kèm lý do và ảnh minh chứng (tuỳ chọn).
+  // ===========================================================================
+  // [ĐÃ SỬA]: Gửi thêm biến `lines` dạng string (vd: "1,2") xuống Backend
+  // ===========================================================================
   Future<void> updateMachineStatus(
     int machineId,
     String status, {
     String? reason,
     File? imageFile,
+    List<int>? lines, // <--- Thêm tham số này
   }) async {
+    // Chuyển mảng [1, 2] thành chuỗi "1,2"
+    String linesStr = lines != null && lines.isNotEmpty ? lines.join(',') : '';
+
     if (imageFile != null) {
       final formData = FormData.fromMap({
         'status': status,
-        'reason': ?reason,
+        'reason': reason,
+        'lines': linesStr, // <--- Bắn qua FormData
         'image': await MultipartFile.fromFile(
           imageFile.path,
           filename: imageFile.path.split('/').last,
@@ -56,21 +73,23 @@ class MachineRepository {
     } else {
       await _dio.patch(
         '/api/v1/machines/$machineId/status',
-        data: {'status': status, 'reason': ?reason},
+        data: {
+          'status': status,
+          'reason': reason,
+          'lines': linesStr, // <--- Bắn qua JSON
+        },
       );
     }
   }
 
-  /// Lấy lịch sử trạng thái của một máy theo [machineId].
   Future<List<MachineLog>> getMachineHistory(int machineId) async {
     final response = await _dio.get(
-      '/api/v1/machines/$machineId/logs',
+      '/api/v1/machines/$machineId/history',
       queryParameters: {'skip': 0, 'limit': 100},
     );
     return (response.data as List).map((e) => MachineLog.fromJson(e)).toList();
   }
 
-  // Import / Export
   Future<Map<String, dynamic>> importExcel(PlatformFile file) async {
     if (file.bytes == null) throw Exception("File data is empty.");
     final formData = FormData.fromMap({

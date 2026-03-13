@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:owvds/features/production/weaving_record/data/weaving_record_repository.dart';
 import 'package:owvds/features/production/weaving_record/domain/weaving_record_model.dart';
@@ -40,7 +41,6 @@ class WeavingRecordCubit extends Cubit<WeavingRecordState> {
     required bool isEdit,
   }) async {
     try {
-      print("📤 Sending Record: ${item.toJson()}");
       if (isEdit) {
         await _repo.updateRecord(item);
       } else {
@@ -48,7 +48,6 @@ class WeavingRecordCubit extends Cubit<WeavingRecordState> {
       }
       loadRecords();
     } catch (e) {
-      print("❌ Save Failed: $e");
       emit(WeavingRecordError(e.toString().replaceAll("Exception: ", "")));
     }
   }
@@ -65,8 +64,10 @@ class WeavingRecordCubit extends Cubit<WeavingRecordState> {
   Future<List<WeavingRecord>> getRecordsByTicketId(int ticketId) async {
     try {
       return await _repo.getRecordsByTicketId(ticketId);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return [];
+      return [];
     } catch (e) {
-      print("Cubit Error fetching by ticket: $e");
       return [];
     }
   }

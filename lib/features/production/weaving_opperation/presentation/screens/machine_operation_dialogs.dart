@@ -14,6 +14,7 @@ import 'package:owvds/features/inventory/material_export/data/material_export_re
 import 'package:owvds/features/production/basket/doamain/basket_model.dart';
 import 'package:owvds/features/production/basket/presentation/bloc/baket_cubit.dart';
 import 'package:owvds/features/production/machine/machine/domain/machine_model.dart';
+import 'package:owvds/features/production/machine/machine/data/machine_repository.dart';
 import 'package:owvds/features/production/machine/machine_assignment/domain/machine_assignment_model.dart';
 import 'package:owvds/features/production/weaving/domain/weaving_model.dart';
 import 'package:owvds/features/production/weaving/presentation/bloc/weaving_cubit.dart';
@@ -28,6 +29,8 @@ import 'package:owvds/l10n/app_localizations.dart';
 
 import 'machine_operation_utils.dart';
 import '../widgets/line_item_widget.dart';
+// ── Notification service: push thông báo realtime về Dashboard ──
+import 'package:owvds/features/production/notifications/data/notification_service.dart';
 
 // =============================================================================
 // MENU 3 CHẤM -> DIALOG CHỌN TRẠNG THÁI CHO NHIỀU LINE
@@ -148,19 +151,11 @@ void showMultiLineStatusDialog(
                                 controller: reasonCtrls[lineIndex],
                                 decoration: InputDecoration(
                                   labelText: isIssue
-                                      ? 'Lý do Line $lineIndex (Bắt buộc)'
+                                      ? 'Lý do Line $lineIndex (Tùy chọn)'
                                       : 'Ghi chú Line $lineIndex',
                                   border: const OutlineInputBorder(),
                                   isDense: true,
                                 ),
-                                validator: isIssue
-                                    ? (v) {
-                                        if (v == null || v.isEmpty) {
-                                          return 'Vui lòng nhập lý do';
-                                        }
-                                        return null;
-                                      }
-                                    : null,
                               ),
                             ),
                         ],
@@ -211,8 +206,9 @@ void showMultiLineStatusDialog(
                             source: ImageSource.camera,
                             imageQuality: 50,
                           );
-                          if (photo != null)
+                          if (photo != null) {
                             setStateDialog(() => capturedImage = photo);
+                          }
                         },
                         icon: const Icon(Icons.camera_alt),
                         label: const Text('Chụp ảnh'),
@@ -229,7 +225,7 @@ void showMultiLineStatusDialog(
               child: Text(l10n.cancel),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 bool hasSelected = selectedLines.values.any((v) => v);
                 if (!hasSelected) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -242,34 +238,78 @@ void showMultiLineStatusDialog(
                 }
 
                 if (formKey.currentState!.validate()) {
+                  List<int> linesList = [];
                   List<String> combinedNotes = [];
-                  for (int i = 1; i <= totalLines; i++) {
-                    final key = '${machine.id}_$i';
-                    if (selectedLines[i]!) {
-                      globalLineStatuses[key] = newStatus.toUpperCase();
 
+                  for (int i = 1; i <= totalLines; i++) {
+                    if (selectedLines[i]!) {
+                      linesList.add(i);
                       final text = reasonCtrls[i]!.text.trim();
                       if (text.isNotEmpty) {
                         combinedNotes.add('[Line $i] $text');
                       } else {
                         combinedNotes.add('[Line $i]');
                       }
-                    } else {
-                      if (!globalLineStatuses.containsKey(key)) {
-                        globalLineStatuses[key] = 'NORMAL';
-                      }
                     }
                   }
 
                   final finalReason = combinedNotes.join(' | ');
 
-                  context.read<MachineOperationCubit>().updateMachineStatus(
-                    machineId: machine.id,
-                    status: newStatus,
-                    reason: finalReason,
-                    imageFile: capturedImage,
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) =>
+                        const Center(child: CircularProgressIndicator()),
                   );
-                  Navigator.pop(ctx);
+                  try {
+                    await MachineRepository().updateMachineStatus(
+                      machine.id,
+                      newStatus,
+                      reason: finalReason,
+                      imageFile: capturedImage != null
+                          ? io.File(capturedImage!.path)
+                          : null,
+                      lines: linesList,
+                    );
+
+                    // Kéo dữ liệu mới nhất từ Backend về
+                    await syncActiveLineStatuses();
+
+                    // Lưu lý do / ghi chú vào bộ nhớ cục bộ để hiện khi bấm vào Line
+                    final Map<int, String> reasonMap = {};
+                    for (int i = 1; i <= totalLines; i++) {
+                      if (selectedLines[i]!) {
+                        reasonMap[i] = reasonCtrls[i]!.text.trim();
+                      }
+                    }
+                    updateLocalLineReasons(
+                      machineId: machine.id,
+                      newStatus: newStatus,
+                      reasonPerLine: reasonMap,
+                    );
+
+                    if (!context.mounted) return;
+                    context.read<MachineOperationCubit>().loadDashboard();
+
+                    // ── Thông báo Dashboard: đổi trạng thái máy ──
+                    NotificationService.instance.notifyMachineStatus(
+                      machineName: machine.machineName,
+                      lines: linesList,
+                      newStatus: newStatus,
+                      reason: finalReason,
+                    );
+
+                    Navigator.pop(context); // Tắt loading
+                    Navigator.pop(ctx); // Tắt dialog
+                  } catch (e) {
+                    Navigator.pop(context); // Tắt loading
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Lỗi cập nhật: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -323,9 +363,7 @@ Future<void> handleLineTap(
       activeLoom.productId,
     );
 
-    if (!context.mounted) {
-      return;
-    }
+    if (!context.mounted) return;
     Navigator.pop(context);
 
     if (activeBatches.isEmpty) {
@@ -339,7 +377,7 @@ Future<void> handleLineTap(
       return;
     }
 
-    // Mở DIALOG (Giữa màn hình)
+    // Mở DIALOG
     showLineDetailDialog(
       context,
       machine,
@@ -350,9 +388,7 @@ Future<void> handleLineTap(
       activeBatches,
     );
   } on DioException catch (e) {
-    if (!context.mounted) {
-      return;
-    }
+    if (!context.mounted) return;
     Navigator.pop(context);
     String errorDetail = e.message ?? 'Lỗi không xác định';
     if (e.response != null && e.response?.data != null) {
@@ -366,9 +402,7 @@ Future<void> handleLineTap(
       ),
     );
   } catch (e) {
-    if (!context.mounted) {
-      return;
-    }
+    if (!context.mounted) return;
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Lỗi ứng dụng: $e'), backgroundColor: Colors.red),
@@ -377,7 +411,7 @@ Future<void> handleLineTap(
 }
 
 // =============================================================================
-// DIALOG: Chi tiết Line — Căn giữa màn hình
+// DIALOG: Chi tiết Line
 // =============================================================================
 
 void showLineDetailDialog(
@@ -389,35 +423,22 @@ void showLineDetailDialog(
   MachineProductHistory activeLoom,
   List<dynamic> activeBatches,
 ) {
-  final localStatus = globalLineStatuses['${machine.id}_$lineCode'];
-  final String ms = (machine.status?.statusName ?? '').toUpperCase();
-  String lineStatus;
+  // Đồng bộ trạng thái theo từng Line (giống MachineCard)
+  final String lineKey = '${machine.id}_$lineCode';
+  final localStatus = globalLineStatuses[lineKey];
+  final String lineStatus = (localStatus != null && localStatus != 'NORMAL')
+      ? localStatus
+      : (ticket != null ? 'RUNNING' : 'IDLE');
 
-  // [ĐÃ SỬA LOGIC]: Tôn trọng tuyệt đối thao tác chọn trạng thái của người dùng
-  if (localStatus != null && localStatus != 'NORMAL') {
-    lineStatus = localStatus;
-  } else {
-    if (ms == 'STOPPED') {
-      lineStatus = 'STOPPED';
-    } else if (ms == 'MAINTENANCE') {
-      lineStatus = 'MAINTENANCE';
-    } else if (ms == 'SPINNING') {
-      lineStatus = 'SPINNING';
-    } else if (ms == 'YARNOUT') {
-      lineStatus = 'YARNOUT';
-    } else if (ms == 'SPLICING') {
-      lineStatus = 'SPLICING';
-    } else if (ticket != null) {
-      lineStatus = 'RUNNING';
-    } else {
-      lineStatus = 'IDLE';
-    }
-  }
+  // Lý do / ghi chú kèm theo trạng thái (nếu có)
+  final String? lineReason = globalLineReasons[lineKey];
 
   final Color statusBg = LineItem.bgColor(lineStatus);
   final Color statusFg = LineItem.textColor(lineStatus);
   final String productCode = activeLoom.product?.itemCode ?? 'N/A';
-  final bool isMachineBlocked =
+
+  // Khi STOPPED/MAINTENANCE: vẫn cho phép Vào rổ, chỉ hiện cảnh báo
+  final bool isWarningStatus =
       lineStatus == 'STOPPED' || lineStatus == 'MAINTENANCE';
 
   showDialog(
@@ -430,6 +451,7 @@ void showLineDetailDialog(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            // ── Tiêu đề ──
             Text(
               '${machine.machineName}  •  Line $lineCode',
               style: const TextStyle(
@@ -440,6 +462,8 @@ void showLineDetailDialog(
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
+
+            // ── Badge trạng thái ──
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
@@ -455,7 +479,81 @@ void showLineDetailDialog(
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+
+            // ── Banner lý do / ghi chú (hiện khi có) ──
+            if (lineReason != null && lineReason.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: statusFg.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: statusFg.withOpacity(0.3)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.notes, size: 16, color: statusFg),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        lineReason,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: statusFg,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // ── Cảnh báo nhẹ khi STOPPED / MAINTENANCE (không chặn) ──
+            if (isWarningStatus) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade300),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      size: 16,
+                      color: Colors.orange.shade700,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Line đang ở trạng thái ${LineItem.shortLabel(lineStatus)}. '
+                        'Bạn vẫn có thể vào/ra rổ bình thường.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.orange.shade800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 20),
+
+            // ── Thông tin sản phẩm ──
             const Text(
               'Mã sản phẩm đang chạy',
               style: TextStyle(fontSize: 12, color: Colors.grey),
@@ -470,6 +568,8 @@ void showLineDetailDialog(
               ),
               textAlign: TextAlign.center,
             ),
+
+            // ── Rổ hiện tại ──
             if (ticket?.basketCode != null) ...[
               const SizedBox(height: 16),
               const Text(
@@ -497,17 +597,21 @@ void showLineDetailDialog(
                 ],
               ),
             ],
+
             const SizedBox(height: 24),
             const Divider(height: 1),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            if (ticket == null && !isMachineBlocked)
+            // ── Các nút thao tác ──
+            // Luôn hiển thị đầy đủ thao tác dù STOPPED/MAINTENANCE
+            if (ticket == null)
+              // Line trống → cho Vào rổ
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.shopping_basket, size: 22),
                   label: const Text(
-                    'VÀO RỔ / TẠO PHIẾU',
+                    'VÀO RỔ',
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -532,7 +636,8 @@ void showLineDetailDialog(
                   },
                 ),
               )
-            else if (ticket != null)
+            else
+              // Line có rổ → hiện đầy đủ thao tác
               Column(
                 children: [
                   _dialogActionBtn(
@@ -596,23 +701,6 @@ void showLineDetailDialog(
                     },
                   ),
                 ],
-              )
-            else if (isMachineBlocked)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Line này đang bị khoá do sự cố.\nVui lòng chuyển trạng thái từ Menu 3 chấm trước.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.red.shade700,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
               ),
 
             const SizedBox(height: 16),
@@ -928,7 +1016,6 @@ Future<void> showAssignBasketAndCreateTicketDialog(
                                   0.0;
                             } else {
                               final dynamic obj = b;
-
                               try {
                                 bId = int.parse(obj.batchId.toString());
                               } catch (_) {}
@@ -1035,21 +1122,22 @@ Future<void> showAssignBasketAndCreateTicketDialog(
                             const Duration(milliseconds: 1000),
                           );
 
-                          if (!context.mounted) {
-                            return;
-                          }
+                          if (!context.mounted) return;
                           await context
                               .read<MachineOperationCubit>()
                               .loadDashboard();
-
-                          if (!context.mounted) {
-                            return;
-                          }
+                          if (!context.mounted) return;
                           await context.read<BasketCubit>().loadBaskets();
+                          if (!ctx.mounted) return;
 
-                          if (!ctx.mounted) {
-                            return;
-                          }
+                          // ── Thông báo Dashboard: vào rổ ──
+                          NotificationService.instance.notifyBasketIn(
+                            machineName: machine.machineName,
+                            lineCode: lineCode,
+                            basketCode: selectedBasket?.code ?? 'N/A',
+                            ticketCode: 'AUTO',
+                          );
+
                           Navigator.pop(ctx);
                         } catch (e) {
                           setStateDialog(() => isSubmitting = false);
@@ -1106,17 +1194,13 @@ Future<void> handleWeighingCheck(
     final records = await context
         .read<WeavingRecordCubit>()
         .getRecordsByTicketId(ticket.id);
-    if (!context.mounted) {
-      return;
-    }
+    if (!context.mounted) return;
     Navigator.pop(context);
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final hasWeighedToday = records.any((r) {
-      if (r.shiftId != currentShift.id || r.updatedAt == null) {
-        return false;
-      }
+      if (r.shiftId != currentShift.id || r.updatedAt == null) return false;
       final recordTime = r.updatedAt!.toLocal();
       return DateTime(
         recordTime.year,
@@ -1138,9 +1222,7 @@ Future<void> handleWeighingCheck(
       showWeighingDialog(context, machine, lineCode, ticket);
     }
   } catch (e) {
-    if (!context.mounted) {
-      return;
-    }
+    if (!context.mounted) return;
     Navigator.pop(context);
     showWeighingDialog(context, machine, lineCode, ticket);
   }
@@ -1346,6 +1428,17 @@ Future<void> saveWeighingData(
   await Future.delayed(const Duration(milliseconds: 500));
   if (context.mounted) {
     context.read<MachineOperationCubit>().loadDashboard();
+
+    // ── Thông báo Dashboard: ghi sản lượng ──
+    NotificationService.instance.notifyWeighing(
+      machineName: 'Máy #$machineId',
+      line: line,
+      basketCode: ticket.basketCode ?? 'N/A',
+      netWeight: netWeight,
+      runWaste: runWaste,
+      setupWaste: setupWaste,
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Đã lưu dữ liệu cân và cập nhật Phiếu dệt!'),
@@ -1492,23 +1585,27 @@ void showReleaseDialog(
                           await Future.delayed(
                             const Duration(milliseconds: 1000),
                           );
-                          if (!context.mounted) {
-                            return;
-                          }
+                          if (!context.mounted) return;
                           await context
                               .read<MachineOperationCubit>()
                               .loadDashboard();
-                          if (!context.mounted) {
-                            return;
-                          }
+                          if (!context.mounted) return;
                           await context.read<BasketCubit>().loadBaskets();
-                          if (!ctx.mounted) {
-                            return;
-                          }
+                          if (!ctx.mounted) return;
                           Navigator.pop(ctx);
-                          if (!context.mounted) {
-                            return;
-                          }
+                          if (!context.mounted) return;
+
+                          // ── Thông báo Dashboard: ra rổ ──
+                          NotificationService.instance.notifyBasketOut(
+                            machineName: 'Máy #${ticket.machineId}',
+                            lineCode: ticket.machineLine ?? '?',
+                            ticketCode: ticket.code,
+                            grossWeight: double.tryParse(grossCtrl.text) ?? 0,
+                            netWeight:
+                                (double.tryParse(grossCtrl.text) ?? 0) -
+                                basketTare,
+                          );
+
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text(

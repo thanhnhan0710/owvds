@@ -105,97 +105,12 @@ class AdminSidebar extends StatelessWidget {
                     context: context,
                     icon: Icons.inventory_2_rounded,
                     title: l10n.inventory,
-                    childrenRoutes: [
-                      '/warehouse-dashboard',
-                      '/warehouses',
-                      '/materials',
-                      '/suppliers',
-                      '/products',
-                      '/units',
-                      '/dye-colors',
-                      '/import-declarations',
-                      '/purchase-orders',
-                      '/stock-in',
-                      '/material-exports',
-                      '/inventorys',
-                      '/batches',
-                    ],
+                    childrenRoutes: ['/warehouse-dashboard'],
                     children: [
                       _buildSubMenuItem(
                         Icons.dashboard_customize,
-                        "Tổng quan Kho",
+                        "Tổng quan Kho NVL",
                         '/warehouse-dashboard',
-                      ),
-                      _buildSubMenuItem(
-                        Icons.storefront_rounded,
-                        l10n.generalInfo,
-                        '#info',
-                        isDummy: true,
-                      ),
-                      _buildLevel3MenuItem(
-                        Icons.store_mall_directory,
-                        l10n.warehouseTitle,
-                        '/warehouses',
-                      ),
-                      _buildLevel3MenuItem(
-                        Icons.layers,
-                        l10n.materialTitle,
-                        '/materials',
-                      ),
-                      _buildLevel3MenuItem(
-                        Icons.local_shipping,
-                        l10n.supplierTitle,
-                        '/suppliers',
-                      ),
-                      _buildLevel3MenuItem(
-                        Icons.shopping_bag,
-                        l10n.productTitle,
-                        '/products',
-                      ),
-
-                      _buildSubMenuItem(
-                        Icons.receipt_long_rounded,
-                        l10n.materialPurchaseOrders,
-                        '#po',
-                        isDummy: true,
-                      ),
-                      _buildLevel3MenuItem(
-                        Icons.description,
-                        l10n.importDeclarationTitle,
-                        '/import-declarations',
-                      ),
-                      _buildLevel3MenuItem(
-                        Icons.shopping_cart_checkout,
-                        l10n.purchaseOrderTitle,
-                        '/purchase-orders',
-                      ),
-
-                      _buildSubMenuItem(
-                        Icons.swap_horiz_rounded,
-                        l10n.importExport,
-                        '#ie',
-                        isDummy: true,
-                      ),
-                      _buildLevel3MenuItem(
-                        Icons.move_to_inbox,
-                        l10n.stockInTitle,
-                        '/stock-in',
-                      ),
-                      _buildLevel3MenuItem(
-                        Icons.output,
-                        l10n.materialExport,
-                        '/material-exports',
-                      ),
-
-                      _buildSubMenuItem(
-                        Icons.grid_view_rounded,
-                        l10n.inventoryStock,
-                        '/inventorys',
-                      ),
-                      _buildSubMenuItem(
-                        Icons.fact_check_rounded,
-                        l10n.batchManagement,
-                        '/batches',
                       ),
                     ],
                   ),
@@ -205,32 +120,12 @@ class AdminSidebar extends StatelessWidget {
                     context: context,
                     icon: Icons.precision_manufacturing_rounded,
                     title: l10n.production,
-                    childrenRoutes: [
-                      '/production-dashboard',
-                      '/machines',
-                      '/baskets',
-                      '/machine-operation',
-                    ],
+                    childrenRoutes: ['/production-dashboard'],
                     children: [
                       _buildSubMenuItem(
                         Icons.dashboard_customize,
                         "Bảng ĐK Sản xuất",
                         '/production-dashboard',
-                      ),
-                      _buildSubMenuItem(
-                        Icons.settings_input_component,
-                        l10n.machineTitle,
-                        '/machines',
-                      ),
-                      _buildSubMenuItem(
-                        Icons.all_inbox,
-                        l10n.basketTitle,
-                        '/baskets',
-                      ),
-                      _buildSubMenuItem(
-                        Icons.auto_mode_rounded,
-                        l10n.machineBasketInfo,
-                        '/machine-operation',
                       ),
                     ],
                   ),
@@ -241,22 +136,12 @@ class AdminSidebar extends StatelessWidget {
                     context: context,
                     icon: Icons.verified_rounded,
                     title: "Quản lý Chất lượng",
-                    childrenRoutes: ['/qc-dashboard', '/boms', '/standards'],
+                    childrenRoutes: ['/qc-dashboard'],
                     children: [
                       _buildSubMenuItem(
                         Icons.dashboard_customize,
                         "Tổng quan QC",
                         '/qc-dashboard',
-                      ),
-                      _buildSubMenuItem(
-                        Icons.account_tree,
-                        l10n.bomTitle,
-                        '/boms',
-                      ),
-                      _buildSubMenuItem(
-                        Icons.assignment,
-                        l10n.standardTitle,
-                        '/standards',
                       ),
                     ],
                   ),
@@ -266,38 +151,12 @@ class AdminSidebar extends StatelessWidget {
                     context: context,
                     icon: Icons.people_alt_rounded,
                     title: l10n.hr,
-                    childrenRoutes: [
-                      '/hr-dashboard',
-                      '/departments',
-                      '/employees',
-                      '/shifts',
-                      '/schedules',
-                    ],
+                    childrenRoutes: ['/hr-dashboard'],
                     children: [
                       _buildSubMenuItem(
                         Icons.dashboard_customize,
                         "Tổng quan Nhân sự",
                         '/hr-dashboard',
-                      ),
-                      _buildSubMenuItem(
-                        Icons.domain,
-                        l10n.departmentTitle,
-                        '/departments',
-                      ),
-                      _buildSubMenuItem(
-                        Icons.badge,
-                        l10n.employeeTitle,
-                        '/employees',
-                      ),
-                      _buildSubMenuItem(
-                        Icons.access_time,
-                        l10n.shiftTitle,
-                        '/shifts',
-                      ),
-                      _buildSubMenuItem(
-                        Icons.calendar_month,
-                        l10n.scheduleTitle,
-                        '/schedules',
                       ),
                     ],
                   ),

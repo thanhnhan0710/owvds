@@ -40,6 +40,8 @@ import 'package:owvds/features/inventory/supplier_category/data/supplier_categor
 import 'package:owvds/features/inventory/supplier_category/presentation/bloc/supplier_category_cubit.dart';
 import 'package:owvds/features/inventory/warehouse/data/warehouse_repository.dart';
 import 'package:owvds/features/inventory/warehouse/presentation/bloc/warehouse_cubit.dart';
+import 'package:owvds/features/log/data/log_repository.dart';
+import 'package:owvds/features/log/presentation/bloc/log_cubit.dart';
 import 'package:owvds/features/production/basket/data/baket_repository.dart';
 import 'package:owvds/features/production/basket/presentation/bloc/baket_cubit.dart';
 import 'package:owvds/features/production/loom_state/product/data/product_repository.dart';
@@ -88,6 +90,7 @@ class AppProviders {
       create: (context) => EmployeeGroupCubit(EmployeeGroupRepository()),
     ),
     BlocProvider<UserCubit>(create: (context) => UserCubit(UserRepository())),
+    BlocProvider<LogCubit>(create: (context) => LogCubit(LogRepository())),
 
     // Sau này khi thêm các Cubit khác, bạn cũng bắt buộc phải viết rõ tên Cubit trong cặp ngoặc <>.
     // Ví dụ: BlocProvider<DepartmentCubit>(create: (context) => DepartmentCubit()),

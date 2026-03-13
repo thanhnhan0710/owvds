@@ -11,8 +11,9 @@ class WeavingRecordRepository {
 
   Future<List<WeavingRecord>> getRecords() async {
     try {
-      final response =
-          await _dio.get(_basePath); // Sửa _endpoint thành _basePath
+      final response = await _dio.get(
+        _basePath,
+      ); // Sửa _endpoint thành _basePath
       if (response.data is List) {
         return (response.data as List)
             .map((e) => WeavingRecord.fromJson(e))
@@ -43,8 +44,10 @@ class WeavingRecordRepository {
 
   Future<void> createRecord(WeavingRecord item) async {
     try {
-      await _dio.post(_basePath,
-          data: item.toJson()); // Sửa _endpoint thành _basePath
+      await _dio.post(
+        _basePath,
+        data: item.toJson(),
+      ); // Sửa _endpoint thành _basePath
     } on DioException catch (e) {
       debugPrint("❌ CREATE ERROR: ${e.response?.data}");
       throw Exception(e.response?.data['detail'] ?? e.message);
@@ -55,8 +58,10 @@ class WeavingRecordRepository {
 
   Future<void> updateRecord(WeavingRecord item) async {
     try {
-      await _dio.put('$_basePath/${item.id}',
-          data: item.toJson()); // Sửa _endpoint thành _basePath
+      await _dio.put(
+        '$_basePath/${item.id}',
+        data: item.toJson(),
+      ); // Sửa _endpoint thành _basePath
     } on DioException catch (e) {
       debugPrint("❌ UPDATE ERROR: ${e.response?.data}");
       throw Exception(e.response?.data['detail'] ?? e.message);
@@ -76,15 +81,20 @@ class WeavingRecordRepository {
   // Hàm lấy records theo Ticket ID
   Future<List<WeavingRecord>> getRecordsByTicketId(int ticketId) async {
     try {
-      final response =
-          await _dio.get(_basePath, // Sửa _endpoint thành _basePath
-              queryParameters: {'weaving_ticket_id': ticketId});
-
+      final response = await _dio.get(
+        _basePath,
+        queryParameters: {'weaving_ticket_id': ticketId},
+      );
       if (response.statusCode == 200 && response.data is List) {
         return (response.data as List)
             .map((e) => WeavingRecord.fromJson(e))
             .toList();
       }
+      return [];
+    } on DioException catch (e) {
+      // 404 = ticket chưa có record nào → bình thường, trả [] im lặng
+      if (e.response?.statusCode == 404) return [];
+      debugPrint("⚠️ Error fetching records by ticket: $e");
       return [];
     } catch (e) {
       debugPrint("⚠️ Error fetching records by ticket: $e");

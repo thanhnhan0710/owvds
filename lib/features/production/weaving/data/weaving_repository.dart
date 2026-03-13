@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
 import '../../../../core/network/api_client.dart';
 import '../domain/weaving_model.dart';
 
@@ -30,7 +31,6 @@ class WeavingRepository {
         'machine_id': ticket.machineId,
         'machine_line': ticket.machineLine,
         'yarn_load_date': ticket.yarnLoadDate, // YYYY-MM-DD
-
         // [THAY ĐỔI] Gửi danh sách yarns thay vì batch_id đơn lẻ
         'yarns': ticket.yarns.map((e) => e.toJson()).toList(),
 
@@ -53,8 +53,10 @@ class WeavingRepository {
 
   Future<void> updateTicket(WeavingTicket ticket) async {
     // ticket.toJson() trong Model đã được cập nhật để bao gồm 'yarns'
-    await _dio.put('/api/v1/weaving-basket-tickets/${ticket.id}',
-        data: ticket.toJson());
+    await _dio.put(
+      '/api/v1/weaving-basket-tickets/${ticket.id}',
+      data: ticket.toJson(),
+    );
   }
 
   Future<void> deleteTicket(int id) async {
@@ -82,10 +84,30 @@ class WeavingRepository {
 
   Future<void> createInspection(WeavingInspection inspection) async {
     try {
-      await _dio.post('/api/v1/weaving-inspections/',
-          data: inspection.toJson());
+      // [SỬA] Xây JSON thủ công: chuyển các trường đo đạc = 0 thành null
+      // Backend schema dùng gt=0 nên 0 bị từ chối (422). null thì hợp lệ.
+      double? nullIfZero(double v) => v == 0 ? null : v;
+
+      final data = {
+        'ticket_id': inspection.ticketId,
+        'stage_name': inspection.stageName,
+        'employee_id': inspection.employeeId,
+        'shift_id': inspection.shiftId,
+        'inspection_time': inspection.inspectionTime,
+        'width_mm': nullIfZero(inspection.widthMm),
+        'weft_density': nullIfZero(inspection.weftDensity),
+        'tension_dan': nullIfZero(inspection.tensionDan),
+        'thickness_mm': nullIfZero(inspection.thicknessMm),
+        'weight_gm': nullIfZero(inspection.weightGm),
+        'bowing': nullIfZero(inspection.bowing),
+      };
+
+      await _dio.post('/api/v1/weaving-inspections/', data: data);
+    } on DioException catch (e) {
+      debugPrint('❌ CREATE INSPECTION ERROR: \${e.response?.data}');
+      throw Exception(e.response?.data?['detail'] ?? e.message);
     } catch (e) {
-      throw Exception("Failed to create inspection: $e");
+      throw Exception('Failed to create inspection: \$e');
     }
   }
 

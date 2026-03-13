@@ -38,26 +38,20 @@ class MachineCard extends StatelessWidget {
   static const Color _headerBgColor = Color(0xFFEEEEEE);
   static const Color _headerTextColor = Color(0xFF424242);
 
+  // [ĐÃ SỬA LOGIC]: Tách bạch hoàn toàn Trạng thái Máy và Trạng thái Line
   String _effectiveLineStatus(String lineCode, WeavingTicket? ticket) {
+    // ƯU TIÊN 1: Trạng thái sự cố / thao tác của RIÊNG TỪNG LINE (Đọc từ DB Backend)
     final localStatus = globalLineStatuses['${machine.id}_$lineCode'];
 
-    // 1. Nếu có trạng thái cục bộ do người dùng vừa thao tác (ngoại trừ NORMAL là cờ báo bỏ qua)
     if (localStatus != null && localStatus != 'NORMAL') {
-      // Dù là RUNNING, SPINNING hay STOPPED, cứ trả về đúng màu đó không cần check Rổ
+      // Đã xoá logic ép về IDLE nếu ticket == null.
+      // Bây giờ user chọn trạng thái nào (RUNNING, STOPPED, MAINTENANCE...), UI sẽ hiện đúng trạng thái đó.
       return localStatus;
     }
 
-    // 2. Nếu không có thao tác cục bộ, đọc từ Backend
-    final ms = (machine.status?.statusName ?? '').toUpperCase();
-    if (ms == 'STOPPED') return 'STOPPED';
-    if (ms == 'MAINTENANCE') return 'MAINTENANCE';
-    if (ms == 'SPINNING') return 'SPINNING';
-    if (ms == 'YARNOUT') return 'YARNOUT';
-    if (ms == 'SPLICING') return 'SPLICING';
-
-    // Ở Backend mặc định, chỉ khi có rổ thì mới tính là RUNNING
+    // ƯU TIÊN 2: Trạng thái bình thường (Tự động theo việc có Phiếu dệt/Rổ hay không)
     if (ticket != null) {
-      return 'RUNNING';
+      return 'RUNNING'; // Có rổ -> Đang chạy
     }
     return 'IDLE'; // Không có rổ -> Trống
   }

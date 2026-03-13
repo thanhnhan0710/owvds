@@ -13,6 +13,8 @@ import 'package:owvds/features/production/weaving/domain/weaving_model.dart';
 import 'package:owvds/features/production/weaving/presentation/bloc/weaving_cubit.dart';
 import 'package:owvds/features/qc/loom_state_standard/presentation/bloc/loom_state_standard_cubit.dart';
 import 'package:owvds/l10n/app_localizations.dart';
+// ── Notification ──
+import 'package:owvds/features/production/notifications/data/notification_service.dart';
 
 class WeavingInspectionScreen extends StatefulWidget {
   final WeavingTicket ticket;
@@ -81,6 +83,7 @@ class _WeavingInspectionScreenState extends State<WeavingInspectionScreen>
     final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: Column(
@@ -128,44 +131,85 @@ class _WeavingInspectionScreenState extends State<WeavingInspectionScreen>
       ),
       body: Column(
         children: [
-          // --- 1. TICKET FULL INFO ---
-          Container(
-            width: double.infinity,
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
-            margin: const EdgeInsets.only(bottom: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.assignment,
-                      size: 20,
-                      color: Colors.blueGrey,
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      "Standard & Product",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: Colors.black87,
+          // --- 1. TICKET INFO: Desktop = always open, Mobile = collapsible ---
+          if (isDesktop)
+            Container(
+              width: double.infinity,
+              color: Colors.white,
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.assignment,
+                        size: 20,
+                        color: Colors.blueGrey,
                       ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        "Standard & Product",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const Spacer(),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: width * 0.5),
+                        child: _TicketBatchList(yarns: widget.ticket.yarns),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 24),
+                  _StandardFullDetails(standardId: widget.ticket.standardId),
+                ],
+              ),
+            )
+          else
+            // Mobile: ExpansionTile thu gọn được — tránh chiếm không gian khi nhập
+            Material(
+              color: Colors.white,
+              child: Theme(
+                data: Theme.of(
+                  context,
+                ).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  tilePadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 0,
+                  ),
+                  childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  initiallyExpanded: false,
+                  leading: const Icon(
+                    Icons.assignment,
+                    size: 18,
+                    color: Colors.blueGrey,
+                  ),
+                  title: Text(
+                    widget.ticket.code,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const Spacer(),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: width * 0.5),
-                      child: _TicketBatchList(yarns: widget.ticket.yarns),
-                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: width * 0.45),
+                    child: _TicketBatchList(yarns: widget.ticket.yarns),
+                  ),
+                  children: [
+                    _StandardFullDetails(standardId: widget.ticket.standardId),
                   ],
                 ),
-                const Divider(height: 24),
-                _StandardFullDetails(standardId: widget.ticket.standardId),
-              ],
+              ),
             ),
-          ),
+
+          const Divider(height: 1),
 
           // --- 2. BODY (History & Form) ---
           Expanded(
@@ -247,9 +291,17 @@ class _WeavingInspectionScreenState extends State<WeavingInspectionScreen>
                 padding: const EdgeInsets.all(8),
                 child: _buildHistoryList(l10n),
               ),
-              SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: _buildInputForm(l10n),
+              Builder(
+                builder: (context) {
+                  // Padding bottom = keyboard height để nút Save không bị che
+                  final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset + 24),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    child: _buildInputForm(l10n),
+                  );
+                },
               ),
             ],
           ),
@@ -453,6 +505,7 @@ class _WeavingInspectionScreenState extends State<WeavingInspectionScreen>
                   controller: _widthCtrl,
                   decoration: _inputDeco(l10n.width),
                   keyboardType: TextInputType.number,
+                  scrollPadding: const EdgeInsets.only(bottom: 200),
                 ),
               ),
               const SizedBox(width: 12),
@@ -461,6 +514,7 @@ class _WeavingInspectionScreenState extends State<WeavingInspectionScreen>
                   controller: _densityCtrl,
                   decoration: _inputDeco("pick/10cm"),
                   keyboardType: TextInputType.number,
+                  scrollPadding: const EdgeInsets.only(bottom: 200),
                 ),
               ),
             ],
@@ -473,6 +527,7 @@ class _WeavingInspectionScreenState extends State<WeavingInspectionScreen>
                   controller: _tensionCtrl,
                   decoration: _inputDeco(l10n.tension),
                   keyboardType: TextInputType.number,
+                  scrollPadding: const EdgeInsets.only(bottom: 200),
                 ),
               ),
               const SizedBox(width: 12),
@@ -481,6 +536,7 @@ class _WeavingInspectionScreenState extends State<WeavingInspectionScreen>
                   controller: _thickCtrl,
                   decoration: _inputDeco(l10n.thickness),
                   keyboardType: TextInputType.number,
+                  scrollPadding: const EdgeInsets.only(bottom: 200),
                 ),
               ),
             ],
@@ -493,6 +549,7 @@ class _WeavingInspectionScreenState extends State<WeavingInspectionScreen>
                   controller: _weightCtrl,
                   decoration: _inputDeco(l10n.weight),
                   keyboardType: TextInputType.number,
+                  scrollPadding: const EdgeInsets.only(bottom: 200),
                 ),
               ),
               const SizedBox(width: 12),
@@ -501,6 +558,7 @@ class _WeavingInspectionScreenState extends State<WeavingInspectionScreen>
                   controller: _bowingCtrl,
                   decoration: _inputDeco(l10n.bow),
                   keyboardType: TextInputType.number,
+                  scrollPadding: const EdgeInsets.only(bottom: 200),
                 ),
               ),
             ],
@@ -585,6 +643,15 @@ class _WeavingInspectionScreenState extends State<WeavingInspectionScreen>
       _bowingCtrl.clear();
 
       if (!ResponsiveLayout.isDesktop(context)) _tabController.animateTo(0);
+
+      // ── Thông báo Dashboard: kiểm tra chất lượng ──
+      NotificationService.instance.notifyInspection(
+        machineName: 'Máy #${widget.ticket.machineId}',
+        lineCode: widget.ticket.machineLine,
+        ticketCode: widget.ticket.code,
+        stageName: stageName,
+      );
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.saveSuccess),

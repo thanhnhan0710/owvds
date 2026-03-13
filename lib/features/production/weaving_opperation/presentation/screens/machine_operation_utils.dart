@@ -1,10 +1,60 @@
 import 'package:flutter/material.dart';
 import 'package:owvds/l10n/app_localizations.dart';
+import 'package:owvds/features/production/machine/machine/data/machine_repository.dart';
 
 // =============================================================================
-// [THÊM MỚI] BỘ NHỚ TẠM TRẠNG THÁI LINE (Dùng để khắc phục lỗi Backend đè trạng thái)
+// BIẾN LƯU TRẠNG THÁI LINE TOÀN CỤC (Đã được đồng bộ Realtime từ Backend)
 // =============================================================================
+
+/// Trạng thái hiện tại của từng Line: key = '${machineId}_${lineCode}'
 final Map<String, String> globalLineStatuses = {};
+
+/// Lý do / ghi chú kèm theo trạng thái của từng Line.
+/// Được ghi vào khi người dùng đổi trạng thái, xoá khi line trở về bình thường.
+/// key = '${machineId}_${lineCode}'
+final Map<String, String> globalLineReasons = {};
+
+/// Hàm gọi API để lấy danh sách trạng thái của các Line đang bị lỗi/bảo trì.
+/// Sau khi sync, tự động dọn dẹp các lý do của những Line đã trở về bình thường.
+Future<void> syncActiveLineStatuses() async {
+  try {
+    final repo = MachineRepository();
+    final Map<String, String> statuses = await repo.getActiveLineStatuses();
+    globalLineStatuses.clear();
+    globalLineStatuses.addAll(statuses);
+
+    // Xoá lý do của các Line không còn trong danh sách trạng thái đặc biệt
+    // (tức là đã được đặt lại về NORMAL từ backend)
+    globalLineReasons.removeWhere(
+      (key, _) => !globalLineStatuses.containsKey(key),
+    );
+  } catch (e) {
+    debugPrint("Lỗi đồng bộ trạng thái các Line từ Backend: $e");
+  }
+}
+
+/// Cập nhật lý do/ghi chú cho một nhóm Line sau khi đổi trạng thái thành công.
+/// Gọi hàm này ngay sau [syncActiveLineStatuses] trong [showMultiLineStatusDialog].
+void updateLocalLineReasons({
+  required int machineId,
+  required String newStatus,
+  required Map<int, String> reasonPerLine,
+}) {
+  final bool isClearStatus = newStatus == 'RUNNING' || newStatus == 'NORMAL';
+  for (final entry in reasonPerLine.entries) {
+    final key = '${machineId}_${entry.key}';
+    if (isClearStatus) {
+      globalLineReasons.remove(key);
+    } else {
+      final reason = entry.value.trim();
+      if (reason.isNotEmpty) {
+        globalLineReasons[key] = reason;
+      } else {
+        globalLineReasons.remove(key);
+      }
+    }
+  }
+}
 
 /// Màu chủ đạo của màn hình vận hành máy.
 const Color kMachineOpPrimaryColor = Color(0xFF003366);

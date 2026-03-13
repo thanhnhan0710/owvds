@@ -1,6 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:owvds/features/inventory/material_batch/presentation/bloc/material_batch_cubit.dart';
 import 'package:owvds/features/production/loom_state/product/presentation/bloc/product_cubit.dart';
 import 'package:owvds/features/production/weaving/domain/weaving_model.dart';
 import 'package:owvds/features/production/weaving/presentation/bloc/weaving_cubit.dart';
@@ -45,8 +47,25 @@ class _WeavingTicketDetailScreenState extends State<WeavingTicketDetailScreen> {
           _isLoadingRecords = false;
         });
       }
+    } on DioException catch (e) {
+      // Backend trả 404 = chưa có record nào → xử lý như danh sách rỗng
+      if (mounted) {
+        setState(() {
+          _weighingRecords = [];
+          _isLoadingRecords = false;
+        });
+      }
+      if (e.response?.statusCode != 404) {
+        debugPrint('! Lỗi tải lịch sử cân rổ: $e');
+      }
     } catch (e) {
-      if (mounted) setState(() => _isLoadingRecords = false);
+      if (mounted) {
+        setState(() {
+          _weighingRecords = [];
+          _isLoadingRecords = false;
+        });
+      }
+      debugPrint('! Lỗi tải lịch sử cân rổ: $e');
     }
   }
 
@@ -62,7 +81,9 @@ class _WeavingTicketDetailScreenState extends State<WeavingTicketDetailScreen> {
           children: [
             const Text("Chi tiết phiếu dệt", style: TextStyle(fontSize: 16)),
             Text(
-              ticket.code,
+              (ticket.code.isEmpty || ticket.code.toUpperCase() == 'AUTO')
+                  ? '#${ticket.id}'
+                  : ticket.code,
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.normal,
@@ -675,28 +696,68 @@ class _TicketBatchListSimple extends StatelessWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: yarns.map((y) {
-        String display =
-            "${y.componentType}: ${y.internalBatchCode ?? 'Lô #${y.batchId}'}";
-        if (y.supplierShortName != null && y.supplierShortName!.isNotEmpty) {
-          display += " [${y.supplierShortName}]";
+    // Dùng MaterialBatchCubit để tra batchCode theo batchId khi internalBatchCode null
+    return BlocBuilder<MaterialBatchCubit, MaterialBatchState>(
+      builder: (context, batchState) {
+        List<dynamic> allBatches = [];
+        if (batchState is MaterialBatchLoaded) {
+          allBatches = batchState.batches;
         }
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 2),
-          child: Text(
-            display,
-            textAlign: TextAlign.right,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF003366),
-            ),
-          ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: yarns.map((y) {
+            // Ưu tiên: internalBatchCode từ nested JSON → fallback tra MaterialBatchCubit theo batchId
+            String batchCode = y.internalBatchCode ?? '';
+            if (batchCode.isEmpty && allBatches.isNotEmpty) {
+              final matched = allBatches
+                  .where((b) => b.id == y.batchId)
+                  .toList();
+              if (matched.isNotEmpty) batchCode = matched.first.batchCode;
+            }
+            if (batchCode.isEmpty) batchCode = 'Lô#${y.batchId}';
+
+            // NCC: ưu tiên supplierShortName từ nested JSON
+            final ncc =
+                (y.supplierShortName != null && y.supplierShortName!.isNotEmpty)
+                ? y.supplierShortName!
+                : '';
+
+            final display = ncc.isNotEmpty
+                ? '${y.componentType}: $batchCode [$ncc]'
+                : '${y.componentType}: $batchCode';
+
+            // Màu theo loại sợi
+            final color = switch (y.componentType.toUpperCase()) {
+              'GROUND' => const Color(0xFF2563EB),
+              'FILLING' => const Color(0xFF059669),
+              'BINDER' => const Color(0xFFD97706),
+              _ => const Color(0xFF7C3AED),
+            };
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.07),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: color.withOpacity(0.25)),
+                ),
+                child: Text(
+                  display,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
         );
-      }).toList(),
+      },
     );
   }
 }

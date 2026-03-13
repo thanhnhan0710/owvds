@@ -20,11 +20,8 @@ import 'package:owvds/features/qc/loom_state_standard/presentation/bloc/loom_sta
 import 'package:owvds/l10n/app_localizations.dart';
 
 import 'machine_operation_dialogs.dart';
+import 'machine_operation_utils.dart'; // <--- Import file utils để dùng hàm sync
 import '../widgets/machine_card_widget.dart';
-
-// =============================================================================
-// MÀN HÌNH CHÍNH: Vận hành máy
-// =============================================================================
 
 class MachineOperationScreen extends StatefulWidget {
   const MachineOperationScreen({super.key});
@@ -48,7 +45,12 @@ class _MachineOperationScreenState extends State<MachineOperationScreen>
   @override
   void initState() {
     super.initState();
-    context.read<MachineOperationCubit>().loadDashboard();
+
+    // [ĐÃ SỬA]: Kéo trạng thái các Line từ Backend về TRƯỚC, sau đó mới load Dashboard
+    syncActiveLineStatuses().then((_) {
+      if (mounted) context.read<MachineOperationCubit>().loadDashboard();
+    });
+
     context.read<ProductCubit>().loadProducts();
     context.read<StandardCubit>().loadStandards();
     context.read<MaterialBatchCubit>().loadBatches();
@@ -74,8 +76,11 @@ class _MachineOperationScreenState extends State<MachineOperationScreen>
 
   void _onWebSocketMessage(String message) {
     if (message == 'REFRESH_MACHINES' || message == 'REFRESH_MACHINE_BATCHES') {
-      debugPrint('WebSocket: Cập nhật lại danh sách Máy Móc tự động.');
-      context.read<MachineOperationCubit>().loadDashboard();
+      debugPrint('WebSocket: Tải lại Machine và Line Status.');
+      // [ĐÃ SỬA]: Reload đồng bộ cả Line Statuses khi có ai đó thao tác
+      syncActiveLineStatuses().then((_) {
+        if (mounted) context.read<MachineOperationCubit>().loadDashboard();
+      });
     }
   }
 
@@ -87,7 +92,7 @@ class _MachineOperationScreenState extends State<MachineOperationScreen>
       backgroundColor: const Color(0xFFEEEEEE),
       appBar: AppBar(
         title: Text(
-          l10n.machineOperation,
+          "THÔNG TIN MÁY & RỔ DỆT",
           style: const TextStyle(color: Colors.white, fontSize: 18),
         ),
         backgroundColor: _primaryColor,
@@ -97,7 +102,12 @@ class _MachineOperationScreenState extends State<MachineOperationScreen>
             icon: const Icon(Icons.refresh, size: 22),
             tooltip: l10n.refreshData,
             onPressed: () {
-              context.read<MachineOperationCubit>().loadDashboard();
+              // Nút refresh cũng phải sync
+              syncActiveLineStatuses().then((_) {
+                if (mounted) {
+                  context.read<MachineOperationCubit>().loadDashboard();
+                }
+              });
               context.read<GlobalAssignmentCubit>().loadDashboardData();
             },
           ),
@@ -154,10 +164,12 @@ class _MachineOperationScreenState extends State<MachineOperationScreen>
         }
       },
       builder: (context, state) {
-        if (state is MachineOpLoading)
+        if (state is MachineOpLoading) {
           return const Center(child: CircularProgressIndicator());
-        if (state is MachineOpLoaded)
+        }
+        if (state is MachineOpLoaded) {
           return _buildLoadedContent(context, state, l10n);
+        }
         return const SizedBox();
       },
     );
@@ -214,8 +226,9 @@ class _MachineOperationScreenState extends State<MachineOperationScreen>
       _currentAreas = sortedAreas;
 
       _tabController!.addListener(() {
-        if (!_tabController!.indexIsChanging)
+        if (!_tabController!.indexIsChanging) {
           _selectedArea = _currentAreas[_tabController!.index];
+        }
       });
     }
 
@@ -250,13 +263,14 @@ class _MachineOperationScreenState extends State<MachineOperationScreen>
               return LayoutBuilder(
                 builder: (context, constraints) {
                   int crossAxisCount;
-                  if (constraints.maxWidth < 600)
+                  if (constraints.maxWidth < 600) {
                     crossAxisCount = 3;
-                  else
+                  } else {
                     crossAxisCount = (constraints.maxWidth / 140).floor().clamp(
                       3,
                       100,
                     );
+                  }
 
                   return SingleChildScrollView(
                     padding: const EdgeInsets.all(4),
@@ -285,7 +299,6 @@ class _MachineOperationScreenState extends State<MachineOperationScreen>
                             state: state,
                             l10n: l10n,
                             activeLoom: activeLoom,
-                            // Gọi hàm hiển thị Checkbox nhiều Line khi chọn xong trạng thái
                             onStatusSelected: (newStatus) =>
                                 showMultiLineStatusDialog(
                                   context,
@@ -294,13 +307,11 @@ class _MachineOperationScreenState extends State<MachineOperationScreen>
                                   totalLines,
                                   l10n,
                                 ),
-                            // Mở hộp thoại xem lịch sử
                             onHistory: () => showDialog(
                               context: context,
                               builder: (ctx) =>
                                   MachineHistoryDialog(machine: machine),
                             ),
-                            // Mở BottomSheet của LINE (Chỉ xử lý rổ)
                             onLineTap: (lineCode, ticket, activeLoom) =>
                                 handleLineTap(
                                   context,

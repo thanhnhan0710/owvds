@@ -15,11 +15,13 @@ import 'package:owvds/features/inventory/material_inventory/presentation/screens
 import 'package:owvds/features/inventory/material_receipt/presentation/screens/material_receipt_screen.dart';
 import 'package:owvds/features/inventory/share/presentation/screens/warehouse_dashboard_screen.dart';
 import 'package:owvds/features/inventory/supplier/presentation/screens/supplier_management_screen.dart';
+import 'package:owvds/features/log/presentation/screens/audit_log_screen.dart';
 import 'package:owvds/features/production/basket/presentation/screens/baket_screen.dart';
 import 'package:owvds/features/production/loom_state/presentation/screens/semi_finished_screen.dart';
 import 'package:owvds/features/production/machine/machine_assignment/presentation/screens/loom_dashboard_screen.dart';
 import 'package:owvds/features/production/machine/presentation/screens/macine_management_screen.dart';
 import 'package:owvds/features/production/weaving_opperation/presentation/screens/machine_operation_screen.dart';
+import 'package:owvds/features/production/weaving_opperation/presentation/screens/weving_ticket_list_screen.dart';
 import 'package:owvds/features/qc/bom/presentation/screens/bom_screen.dart';
 import 'package:owvds/features/qc/loom_state_standard/presentation/screens/loom_state_standard_screen.dart';
 import 'package:owvds/features/qc/share/presentation/screens/qc_dashboard_screen.dart';
@@ -59,6 +61,10 @@ class AppRouter {
         GoRoute(
           path: '/users',
           builder: (context, state) => const UserScreen(),
+        ),
+        GoRoute(
+          path: '/logs',
+          builder: (context, state) => const AuditLogScreen(),
         ),
 
         // HR
@@ -143,6 +149,10 @@ class AppRouter {
         GoRoute(
           path: '/machine-operations',
           builder: (context, state) => const MachineOperationScreen(),
+        ),
+        GoRoute(
+          path: '/weaving-tickets',
+          builder: (context, state) => const WeavingTicketListScreen(),
         ),
 
         //QC
