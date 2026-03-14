@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Cần thêm quyền này để quét Barcode/QR -->
+    <uses-permission android:name="android.permission.CAMERA"/>
     <application
         android:label="owvds"
         android:name="${applicationName}"

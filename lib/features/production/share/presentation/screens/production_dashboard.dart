@@ -39,6 +39,10 @@ import 'package:owvds/features/production/notifications/data/notification_servic
 import 'package:owvds/features/production/notifications/domain/notification_model.dart';
 import 'package:owvds/features/production/notifications/presentation/notification_cubit.dart';
 
+// Weaving tickets — đếm số phiếu đang xử lý (timeOut == null)
+import 'package:owvds/features/production/weaving/data/weaving_repository.dart';
+import 'package:owvds/features/production/weaving/presentation/bloc/weaving_cubit.dart';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Bảng màu toàn cục trong file
 // ─────────────────────────────────────────────────────────────────────────────
@@ -73,7 +77,10 @@ class ProductionDashboard extends StatelessWidget {
               WeavingAnalyticsCubit(WeavingAnalyticsRepository())
                 ..load(period: AnalyticsPeriod.day),
         ),
-        BlocProvider(create: (_) => NotificationCubit()),
+        BlocProvider(create: (_) => NotificationCubit(), lazy: false),
+        BlocProvider(
+          create: (_) => WeavingCubit(WeavingRepository())..loadTickets(),
+        ),
       ],
       child: const _ProductionDashboardBody(),
     );
@@ -552,12 +559,27 @@ class _ProductionDashboardState extends State<_ProductionDashboardBody> {
                       Icons.precision_manufacturing,
                       Colors.green,
                     ),
-                    // ── Phiếu chờ xử lý ──
-                    _buildKPICard(
-                      'Phiếu chờ xử lý',
-                      '12',
-                      Icons.assignment_late,
-                      Colors.orange,
+                    // ── Phiếu đang xử lý (dữ liệu thật) ──
+                    BlocBuilder<WeavingCubit, WeavingState>(
+                      builder: (ctx, weavingState) {
+                        final String countText;
+                        if (weavingState is WeavingLoading) {
+                          countText = '...';
+                        } else if (weavingState is WeavingLoaded) {
+                          final count = weavingState.tickets
+                              .where((t) => t.timeOut == null)
+                              .length;
+                          countText = '$count';
+                        } else {
+                          countText = '—';
+                        }
+                        return _buildKPICard(
+                          'Phiếu đang xử lý',
+                          countText,
+                          Icons.assignment_late,
+                          Colors.orange,
+                        );
+                      },
                     ),
                   ],
                 );

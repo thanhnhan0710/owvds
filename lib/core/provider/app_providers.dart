@@ -56,8 +56,11 @@ import 'package:owvds/features/production/machine/machine_status/data/machine_st
 import 'package:owvds/features/production/machine/machine_status/presentation/bloc/machine_status_cubit.dart';
 import 'package:owvds/features/production/machine/machine_type/data/machine_type_repository.dart';
 import 'package:owvds/features/production/machine/machine_type/presentation/bloc/machine_type_cubit.dart';
+import 'package:owvds/features/production/notifications/presentation/notification_cubit.dart';
 import 'package:owvds/features/production/weaving/data/weaving_repository.dart';
 import 'package:owvds/features/production/weaving/presentation/bloc/weaving_cubit.dart';
+import 'package:owvds/features/production/weaving_analytics/data/weaving_analytics_repository.dart';
+import 'package:owvds/features/production/weaving_analytics/presentation/bloc/weaving_analytics_cubit.dart';
 import 'package:owvds/features/production/weaving_opperation/presentation/bloc/machine_operation_cubit.dart';
 import 'package:owvds/features/production/weaving_record/data/weaving_record_repository.dart';
 import 'package:owvds/features/production/weaving_record/presentation/bloc/weaving_record_cubit.dart';
@@ -180,6 +183,10 @@ class AppProviders {
     ),
     BlocProvider<WeavingRecordCubit>(
       create: (context) => WeavingRecordCubit(WeavingRecordRepository()),
+    ),
+    BlocProvider<NotificationCubit>(create: (context) => NotificationCubit()),
+    BlocProvider<WeavingAnalyticsCubit>(
+      create: (context) => WeavingAnalyticsCubit(WeavingAnalyticsRepository()),
     ),
 
     //QC

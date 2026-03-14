@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dropdown_search/dropdown_search.dart'; // [MỚI] Import Dropdown Search
+
 import 'package:owvds/core/widgets/responsive_layout.dart';
 import 'package:owvds/features/hr/employee/domain/employee_model.dart';
 import 'package:owvds/features/hr/employee/presentation/bloc/employee_cubit.dart';
 import 'package:owvds/l10n/app_localizations.dart';
 
-import '../../../../../core/network/websocket_service.dart'; // [MỚI] Import WebSocket
+import '../../../../../core/network/websocket_service.dart';
 import '../../domain/user_model.dart';
 import '../bloc/user_cubit.dart';
 
@@ -19,7 +21,7 @@ class UserScreen extends StatefulWidget {
 
 class _UserScreenState extends State<UserScreen> {
   final _searchController = TextEditingController();
-  Timer? _debounce; // [MỚI] Timer cho việc tìm kiếm
+  Timer? _debounce;
 
   final Color _primaryColor = const Color(0xFF003366);
   final Color _bgLight = const Color(0xFFF5F7FA);
@@ -30,7 +32,6 @@ class _UserScreenState extends State<UserScreen> {
     context.read<UserCubit>().loadUsers();
     context.read<EmployeeCubit>().loadEmployees();
 
-    // [MỚI] Kết nối và lắng nghe WebSocket
     WebSocketService().connect();
     WebSocketService().addListener(_onWebSocketMessage);
   }
@@ -40,17 +41,14 @@ class _UserScreenState extends State<UserScreen> {
     _debounce?.cancel();
     _searchController.dispose();
 
-    // [MỚI] Hủy lắng nghe WebSocket
     WebSocketService().removeListener(_onWebSocketMessage);
     super.dispose();
   }
 
-  // [MỚI] Hàm xử lý WebSocket
   void _onWebSocketMessage(String message) {
     if (message == "REFRESH_USERS") {
       debugPrint("WebSocket: Làm mới danh sách Người dùng.");
       if (mounted) {
-        // Tôn trọng từ khóa tìm kiếm hiện tại nếu có
         if (_searchController.text.isNotEmpty) {
           context.read<UserCubit>().searchUsers(_searchController.text);
         } else {
@@ -60,7 +58,6 @@ class _UserScreenState extends State<UserScreen> {
     }
   }
 
-  // [MỚI] Hàm tìm kiếm có delay (Debounce)
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
@@ -149,7 +146,7 @@ class _UserScreenState extends State<UserScreen> {
                         ),
                         child: TextField(
                           controller: _searchController,
-                          onChanged: _onSearchChanged, // Gọi hàm debounce
+                          onChanged: _onSearchChanged,
                           textInputAction: TextInputAction.search,
                           decoration: InputDecoration(
                             hintText: l10n.searchUser,
@@ -440,7 +437,7 @@ class _UserScreenState extends State<UserScreen> {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: users.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final user = users[index];
         return Card(
@@ -685,7 +682,7 @@ class _UserScreenState extends State<UserScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // EMPLOYEE DROPDOWN
+                      // [CẬP NHẬT] EMPLOYEE DROPDOWN VỚI DROPDOWN_SEARCH v6
                       BlocBuilder<EmployeeCubit, EmployeeState>(
                         builder: (context, empState) {
                           if (empState is EmployeeLoading) {
@@ -702,46 +699,82 @@ class _UserScreenState extends State<UserScreen> {
                             employees = empState.employees;
                           }
 
-                          return DropdownButtonFormField<int?>(
-                            value: selectedEmployeeId,
-                            isExpanded: true,
-                            decoration: InputDecoration(
-                              labelText: l10n.linkToEmployee,
-                              helperText: l10n.linkEmployeeHelper,
-                              border: const OutlineInputBorder(),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 16,
+                          // Tìm object Employee đã chọn dựa trên selectedEmployeeId
+                          Employee? currentSelectedEmp;
+                          if (selectedEmployeeId != null &&
+                              employees.isNotEmpty) {
+                            try {
+                              currentSelectedEmp = employees.firstWhere(
+                                (e) => e.id == selectedEmployeeId,
+                              );
+                            } catch (_) {
+                              currentSelectedEmp = null;
+                            }
+                          }
+
+                          return DropdownSearch<Employee>(
+                            // Logic tìm kiếm của v6
+                            items: (filter, loadProps) {
+                              if (filter.isEmpty) return employees;
+                              return employees.where((emp) {
+                                return emp.fullName.toLowerCase().contains(
+                                      filter.toLowerCase(),
+                                    ) ||
+                                    emp.id.toString().contains(filter);
+                              }).toList();
+                            },
+                            compareFn: (item, selectedItem) =>
+                                item.id == selectedItem.id,
+                            itemAsString: (Employee emp) =>
+                                "${emp.fullName} (ID: ${emp.id})",
+                            selectedItem: currentSelectedEmp,
+                            suffixProps: const DropdownSuffixProps(
+                              clearButtonProps: ClearButtonProps(
+                                isVisible: true,
+                                icon: Icon(Icons.clear, size: 20),
                               ),
                             ),
-                            items: [
-                              DropdownMenuItem<int?>(
-                                value: null,
-                                child: Text(
-                                  l10n.noEmployeeLinkedOption,
-                                  style: const TextStyle(color: Colors.grey),
+                            decoratorProps: DropDownDecoratorProps(
+                              decoration: InputDecoration(
+                                labelText: l10n.linkToEmployee,
+                                helperText: l10n.linkEmployeeHelper,
+                                border: const OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 16,
                                 ),
                               ),
-                              ...employees.map((emp) {
-                                return DropdownMenuItem<int?>(
-                                  value: emp.id,
-                                  child: Text(
-                                    "${emp.fullName} (ID: ${emp.id})",
+                            ),
+                            popupProps: PopupProps.menu(
+                              showSearchBox: true,
+                              searchFieldProps: TextFieldProps(
+                                decoration: InputDecoration(
+                                  hintText: l10n.searchUser,
+                                  prefixIcon: const Icon(Icons.search),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                );
-                              }),
-                            ],
-                            onChanged: (val) {
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                    horizontal: 16,
+                                  ),
+                                ),
+                              ),
+                              emptyBuilder: (context, searchEntry) => Center(
+                                child: Text(
+                                  "Không tìm thấy dữ liệu",
+                                  style: TextStyle(color: Colors.grey.shade600),
+                                ),
+                              ),
+                            ),
+                            onChanged: (Employee? val) {
                               setState(() {
-                                selectedEmployeeId = val;
-                                // Tự động điền Tên nếu người dùng chưa nhập gì
+                                selectedEmployeeId = val?.id;
+                                // Tự động điền thông tin nếu người dùng chưa nhập gì
                                 if (val != null && nameCtrl.text.isEmpty) {
-                                  final selectedEmp = employees.firstWhere(
-                                    (e) => e.id == val,
-                                  );
-                                  nameCtrl.text = selectedEmp.fullName;
-                                  emailCtrl.text = selectedEmp.email;
-                                  phoneCtrl.text = selectedEmp.phone;
+                                  nameCtrl.text = val.fullName;
+                                  emailCtrl.text = val.email;
+                                  phoneCtrl.text = val.phone;
                                 }
                               });
                             },
